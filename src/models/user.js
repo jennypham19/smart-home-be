@@ -121,9 +121,18 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.DATE,
             allowNull: true
         },
-        // 24. last_login_ip
+        // 24. last_login_ip: Địa chỉ IP lần đăng nhập gần nhất, có thể null
+        last_login_ip: {
+            type: DataTypes. INET,
+            allowNull: true
+        },
         /* - - - Tùy chọn */
-        // 25. preferences
+        // 25. preferences: Tùy chọn nhận thông báo. VD {“newsletter”: true, “sms_promo”: false}
+        preferences: {
+            type: DataTypes.JSONB,
+            allowNull: true,
+            defaultValue: {}
+        },
         // 26. created_at: Thời điểm tạo bản ghi, DATETIME, không được null, mặc định là thời điểm hiện tại, CURRENT_TIMESTAMP 
         created_at: {
             type: DataTypes.DATE,
