@@ -12,10 +12,10 @@ module.exports = (sequelize, DataTypes) => {
          * The `models/index` file will call this method automatically.
          */
         static associate(models) {
-            // Định nghĩa mối quan hệ: một Token thuộc về một user
-            Token.belongsTo(models.User, {
-                foreignKey: 'user_id',
-                onDelete: 'CASCADE', // Nếu user bị xóa, các token của họ cũng sẽ bị xóa
+            // Định nghĩa mối quan hệ: một Token thuộc về một account
+            Token.belongsTo(models.Account, {
+                foreignKey: 'account_id',
+                onDelete: 'CASCADE', // Nếu account bị xóa, các token của họ cũng sẽ bị xóa
             })
         }
     }
@@ -23,9 +23,9 @@ module.exports = (sequelize, DataTypes) => {
     Token.init({
         // Cột id: UUID tự sinh, là khóa chính
         id: {
-            type: DataTypes.BIGINT, // BIGINT UNSIGNED là dùng trong MySQL, nhưng Sequelize không có kiểu dữ liệu UNSIGNED, nên dùng BIGINT bình thường
+            type: DataTypes.UUID, // BIGINT UNSIGNED là dùng trong MySQL, nhưng Sequelize không có kiểu dữ liệu UNSIGNED, nên dùng BIGINT bình thường
             allowNull: false,
-            autoIncrement: true,
+            defaultValue: DataTypes.UUIDV7,
             primaryKey: true
         },
         // Cột token: chuỗi token, không được null và phải là duy nhất
@@ -52,9 +52,9 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.BOOLEAN,
             defaultValue: false,
         },
-        // Cột user_id: khóa ngoại, liên kết đến bảng Users, không được null
-        user_id: {
-            type: DataTypes.INTEGER,
+        // Cột account_id: khóa ngoại, liên kết đến bảng Accounts, không được null
+        account_id: {
+            type: DataTypes.UUID,
             allowNull: false
         }
     }, {

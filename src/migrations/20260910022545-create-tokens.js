@@ -6,8 +6,8 @@ module.exports = {
     await queryInterface.createTable('Tokens', {
       // id của user, kiểu UUID, khóa chính, không null, sự sinh UUID v4 khi tạo mới
       id: { 
-        type: Sequelize.BIGINT,
-        autoIncrement: true,
+        type: Sequelize.UUID,
+        defaultValue: Sequelize.literal('gen_random_uuid()'),
         primaryKey: true,
         allowNull: false
       },
@@ -15,11 +15,11 @@ module.exports = {
       type: { type: Sequelize.STRING, allowNull: false},
       expires: { type: Sequelize.DATE, allowNull: false},
       blacklisted: { type: Sequelize.BOOLEAN, defaultValue: false},
-      // Khóa ngoại tới bảng Users
-      user_id: {
-        type: Sequelize.BIGINT,
+      // Khóa ngoại tới bảng Accounts
+      account_id: {
+        type: Sequelize.UUID,
         allowNull: false,
-        references: { model: 'Users', key: 'id'},
+        references: { model: 'Accounts', key: 'id'},
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
