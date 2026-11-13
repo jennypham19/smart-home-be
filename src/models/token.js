@@ -13,9 +13,10 @@ module.exports = (sequelize, DataTypes) => {
          */
         static associate(models) {
             // Định nghĩa mối quan hệ: một Token thuộc về một account
-            Token.belongsTo(models.Account, {
-                foreignKey: 'account_id',
-                onDelete: 'CASCADE', // Nếu account bị xóa, các token của họ cũng sẽ bị xóa
+            Token.belongsTo(models.User, {
+                foreignKey: 'user_id',
+                onDelete: 'CASCADE', // Nếu account
+                // bị xóa, các token của họ cũng sẽ bị xóa
             })
         }
     }
@@ -25,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
         id: {
             type: DataTypes.UUID, // BIGINT UNSIGNED là dùng trong MySQL, nhưng Sequelize không có kiểu dữ liệu UNSIGNED, nên dùng BIGINT bình thường
             allowNull: false,
-            defaultValue: DataTypes.UUIDV7,
+            defaultValue: DataTypes.UUIDV4,
             primaryKey: true
         },
         // Cột token: chuỗi token, không được null và phải là duy nhất
@@ -53,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
             defaultValue: false,
         },
         // Cột account_id: khóa ngoại, liên kết đến bảng Accounts, không được null
-        account_id: {
+        user_id: {
             type: DataTypes.UUID,
             allowNull: false
         }
@@ -62,6 +63,8 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'Token',
         // Tên bảng trong database, mặc định Sequelize sẽ tự chuyển thành số nhiều
         // tableName: 'Tokens'
+        createdAt: 'created_at',
+        updatedAt: 'updated_at',
     });
 
     return Token;

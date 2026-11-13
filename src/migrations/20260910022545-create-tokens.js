@@ -15,16 +15,16 @@ module.exports = {
       type: { type: Sequelize.STRING, allowNull: false},
       expires: { type: Sequelize.DATE, allowNull: false},
       blacklisted: { type: Sequelize.BOOLEAN, defaultValue: false},
-      // Khóa ngoại tới bảng Accounts
-      account_id: {
+      // Khóa ngoại tới bảng Users
+      user_id: {
         type: Sequelize.UUID,
         allowNull: false,
-        references: { model: 'Accounts', key: 'id'},
+        references: { model: 'Users', key: 'id'},
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE',
       },
-      createdAt: { type: Sequelize.DATE, allowNull: false},
-      updatedAt: { type: Sequelize.DATE, allowNull: false}
+      created_at: { type: Sequelize.DATE, allowNull: false},
+      updated_at: { type: Sequelize.DATE, allowNull: false}
     })
   },
 
