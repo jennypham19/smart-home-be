@@ -1,6 +1,4 @@
 const { StatusCodes } = require('http-status-codes');
-const bcrypt  = require('bcryptjs');
-const crypto = require('crypto');
 const { Product } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op } = require('sequelize');

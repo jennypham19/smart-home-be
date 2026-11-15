@@ -5,6 +5,7 @@ const app = require('./app');
 const config = require('../src/config');
 const logger = require('./config/logger.js');
 const { sequelize } = require('../src/models');
+const { initWebSocket } = require('./config/websocket');
 
 let httpServer;
 const startServer = async () => {
@@ -15,6 +16,9 @@ const startServer = async () => {
 
         // 2. Tạo HTTP server từ Express app
         httpServer = http.createServer(app);
+
+        // 2.1. Khởi tạo WebSocket server (realtime) gắn vào HTTP server
+        initWebSocket(httpServer);
 
         //3. Lắng nghe trên port đã cấu hình
         httpServer.listen(config.port, () => {
