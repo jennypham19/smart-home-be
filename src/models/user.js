@@ -57,6 +57,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.INTEGER,
             defaultValue: 1 // -1: đã xóa, 1: chưa xóa - còn tồn tại        
         },
+        avatar_url: {
+            type: DataTypes.TEXT,
+            allowNull: true
+        }
     }, {
         sequelize,
         modelName: 'User',
