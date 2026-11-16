@@ -16,7 +16,13 @@ const getListProducts = catchAsync(async (req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: 'Lấy danh sách thành công.', data: products})
 })
 
+// Lấy toàn bộ sản phẩm (không phân trang)
+const handleGetAllProducts = catchAsync(async(req, res) => {
+    const allProducts = await productService.getAllProducts();
+    res.status(StatusCodes.OK).send({ success: true, message: 'Lấy danh sách thành công.', data: allProducts })
+})
 module.exports = {
     createProduct,
-    getListProducts
+    getListProducts,
+    handleGetAllProducts
 }

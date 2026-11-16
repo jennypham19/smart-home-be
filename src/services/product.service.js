@@ -2,6 +2,7 @@ const { StatusCodes } = require('http-status-codes');
 const { Product } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op } = require('sequelize');
+const { broadcast } = require('../config/websocket');
 
 // Lấy chi tiết product theo id
 const getProductById = async(id) => {
@@ -76,7 +77,45 @@ const queryListProducts = async(queryOptions) => {
     }
 }
 
+// Lấy toàn bộ sản phẩm (không phân trang) - dùng cho broadcast realtime
+const getAllProducts = async() => {
+    try {
+        const productsDB = await Product.findAll({
+            order: [['created_at', 'DESC']]
+        });
+        return productsDB.map((product) => {
+            const newProduct = product.toJSON();
+            return {
+                id: newProduct.id,
+                name: newProduct.name,
+                skuCode: newProduct.sku_code,
+                brand: newProduct.brand,
+                amount: newProduct.amount,
+                category: newProduct.category,
+                status: newProduct.status,
+                createdAt: newProduct.created_at,
+                updatedAt: newProduct.updated_at,
+            }
+        });
+    } catch (error) {
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi khi lấy toàn bộ sản phẩm: ' + error.message);
+    }
+}
+
+// Lấy dữ liệu mới nhất và broadcast tới tất cả client để cập nhật lại amount của product
+const emitAmountProductUpdated = async() => {
+    try {
+        const products = await getAllProducts();
+        broadcast('amount_product:updated', { data: products, total: products.length })
+    } catch (error) {
+        // Không để lỗi broadcast làm hỏng luồng chính
+        console.error('Lỗi khi broadcast amount_product:updated: ' + error.message);
+    }
+}
+
 module.exports = {
     createdProduct,
-    queryListProducts
+    queryListProducts,
+    getAllProducts,
+    emitAmountProductUpdated
 }

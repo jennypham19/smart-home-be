@@ -38,7 +38,11 @@ module.exports = (sequelize, DataTypes) => {
         is_checked: {
             type: DataTypes.BOOLEAN,
             defaultValue: false
-        }
+        },
+        sku_code: {
+            type: DataTypes.STRING(10),
+            allowNull: false
+        },
     }, {
         sequelize,
         modelName: 'ProductOrder',

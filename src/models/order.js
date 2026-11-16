@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull:false
         },
         process: {
-            type: DataTypes.INTEGER,
+            type: DataTypes.FLOAT,
             defaultValue: 0
         },
         /*

@@ -27,9 +27,38 @@ const handleListOrdersForProductionEmployee = catchAsync(async(req, res) => {
     const list = await orderService.getListOrdersForProductionEmployee();
     res.status(StatusCodes.OK).send({ success: true, message: 'Lấy danh sách thành công', data: list})
 })
+
+// Lấy danh sách chi tiết đơn hàng
+const handleGetDetailOrderWithProducts = catchAsync(async(req, res) => {
+    const order = await orderService.getDetailOrderWithProduct(req.params.id);
+    res.status(StatusCodes.OK).send({ success: true, message: 'Lấy thông tin chi tiết thành công. ', data: order })
+})
+
+// Tick/untick 1 sản phẩm trong đơn
+const handleUpdateProductChecked = catchAsync(async(req, res) => {
+    const order = await orderService.updateProductChecked(req.params.productId, req.body.isChecked);
+    res.status(StatusCodes.OK).send({ success: true, message: 'Cập nhật trạng thái sản phẩm thành công', data: order })
+})
+
+// cập nhật trạng thái đơn hàng hoàn thành
+const handleUpdateStatusForCompletedOrder = catchAsync(async(req, res) => {
+    await orderService.updateStatusForOrderCompleted(req.params.id, req.body.status);
+    res.status(StatusCodes.OK).send({ success: true, message: 'Cập nhật đơn hoàn thành thành công.'})
+})
+
+// gửi duyệt cho đơn hoàn thành
+const handleSendApprovalForCompletedOrder = catchAsync(async(req, res) => {
+    await orderService.sendApprovalForOrderCompleted(req.params.id, req.body.status);
+    res.status(StatusCodes.OK).send({ success: true, message: 'Gửi duyệt đơn hoàn thành thành công.'})
+})
+
 module.exports = {
     handleGenerateOrderCode,
     handleCreateOrderWithProduct,
     handleGetListOrders,
-    handleListOrdersForProductionEmployee
+    handleListOrdersForProductionEmployee,
+    handleGetDetailOrderWithProducts,
+    handleUpdateProductChecked,
+    handleUpdateStatusForCompletedOrder,
+    handleSendApprovalForCompletedOrder
 }

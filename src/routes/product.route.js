@@ -12,4 +12,6 @@ router.post('/product-created', validate(productValidation.createProduct), produ
 
 router.get('/list-products', validate(baseValidation.queryOptions), productController.getListProducts)
 
+router.get('/all-list-products', productController.handleGetAllProducts)
+
 module.exports = router;
