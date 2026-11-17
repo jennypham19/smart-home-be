@@ -34,6 +34,19 @@ router.get(
     orderController.handleListOrdersForProductionEmployee
 )
 
+// Lấy toàn bộ đơn hàng theo trạng thái pending_manager_approval cho role quản lý (không phân trang)
+router.get(
+    '/orders-with-status-pending-manager-approval',
+    orderController.handleGetAllOrdersWithStatusPendingManagerApproval
+)
+
+// Lấy toàn bộ đơn hàng theo trạng thái pending_manager_approval cho role quản lý (Có phân trang)
+router.get(
+    '/orders-paginated-with-status-pending-manager-approval',
+    validate(baseValidation.queryOptions),
+    orderController.handleGetAllOrdersPaginatedWithStatusPendingManagerApproval
+)
+
 router.get(
     '/detail-orders-with-products/:id',
     validate(baseValidation.queryOption),
@@ -73,6 +86,13 @@ router.patch(
     '/order-sent-approval-to-manager/:id',
     validate(orderValidation.updateStatusForCompletedOrder),
     orderController.handleSendApprovalOrderToManager
+)
+
+// duyệt đơn bởi quản lý
+router.patch(
+    '/order-approved-by-manager/:id',
+    validate(orderValidation.updateStatusForCompletedOrder),
+    orderController.handleApprovedByManager
 )
 
 module.exports = router

@@ -201,6 +201,113 @@ const getAllOrders = async() => {
     }
 }
 
+// Lấy toàn bộ đơn hàng theo trạng thái pending_manager_approval cho role quản lý (không phân trang)
+const getAllOrdersWithStatusPendingManagerApproval = async() => {
+    try {
+        const orderDB = await Order.findAll({
+            where: {
+                status: 'pending_manager_approval'
+            },
+            include: [
+                {
+                    model: ProductOrder,
+                    as: 'OrderProducts'
+                }
+            ],
+            order: [[ 'created_at', 'DESC']],
+            distinct: true
+        });
+        return orderDB.map((order) => {
+            const newOrder = order.toJSON();
+            return {
+                id: newOrder.id,
+                code: newOrder.code,
+                name: newOrder.name,
+                productQuantity: newOrder.product_quantity,
+                process: newOrder.process,
+                status: newOrder.status,
+                createdBy: newOrder.created_by,
+                products: (newOrder.OrderProducts ?? [])
+                    .filter((el) => el.order_id === newOrder.id)
+                    .map((product) => {
+                        return{
+                            id: product.id,
+                            name: product.name,
+                            quantity: product.quantity,
+                            description: product.description,
+                            isChecked: product.is_checked,
+                            createdAt: product.created_at,
+                            updatedAt: product.updated_at,
+                        }
+                    }),
+                createdAt: newOrder.created_at,
+                updatedAt: newOrder.updated_at,
+            }
+        });
+    } catch (error) {
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi khi lấy toàn bộ đơn hàng: ' + error.message);
+    }
+}
+
+// Lấy toàn bộ đơn hàng theo trạng thái pending_manager_approval cho role quản lý (Có phân trang)
+const getAllOrdersPaginatedWithStatusPendingManagerApproval = async(queryOptions) => {
+    try {
+        const { page, limit, searchTerm } = queryOptions;
+        const offset = (page - 1) * limit;
+        const { count, rows: ordersBD } = await Order.findAndCountAll({
+            where: {
+                status: 'pending_manager_approval'
+            },
+            limit,
+            offset,
+            include: [
+                {
+                    model: ProductOrder,
+                    as: 'OrderProducts'
+                }
+            ],
+            order: [[ 'created_at', 'DESC']],
+            distinct: true
+        });
+        const totalPages = Math.ceil(count/limit);
+        const orders = ordersBD.map((order) => {
+            const newOrder = order.toJSON();
+            return {
+                id: newOrder.id,
+                code: newOrder.code,
+                name: newOrder.name,
+                productQuantity: newOrder.product_quantity,
+                process: newOrder.process,
+                status: newOrder.status,
+                createdBy: newOrder.created_by,
+                products: (newOrder.OrderProducts ?? [])
+                    .filter((el) => el.order_id === newOrder.id)
+                    .map((product) => {
+                        return{
+                            id: product.id,
+                            name: product.name,
+                            quantity: product.quantity,
+                            description: product.description,
+                            isChecked: product.is_checked,
+                            createdAt: product.created_at,
+                            updatedAt: product.updated_at,
+                        }
+                    }),
+                createdAt: newOrder.created_at,
+                updatedAt: newOrder.updated_at,
+            }
+        });
+        return {
+            data: orders,
+            totalPages,
+            currentPage: page,
+            total: count
+        }
+    } catch (error) {
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi khi lấy toàn bộ đơn hàng: ' + error.message);
+    }
+}
+
 // Lấy danh sách đơn hàng cho nhân viên sản xuất: nhóm theo 3 trạng thái + tổng số lượng từng trạng thái
 const getListOrdersForProductionEmployee = async() => {
     try {
@@ -459,6 +566,19 @@ const sendApprovalOrderToManager = async(id, status) => {
     }
 }
 
+// duyệt đơn bởi quản lý
+const approvedByManager = async(id, status) => {
+    try {
+        const order = await Order.findByPk(id);
+        order.status = status,
+        await order.save()        
+        await emitOrdersUpdated(); // danh sách đơn hàng
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
+    }
+}
+
 module.exports = {
     getNewOrderCode,
     createOrderWithProduct,
@@ -471,5 +591,8 @@ module.exports = {
     sendApprovalForOrderCompleted,
     getAllOrders,
     approvedByAppEmployee,
-    sendApprovalOrderToManager
+    sendApprovalOrderToManager,
+    getAllOrdersWithStatusPendingManagerApproval,
+    getAllOrdersPaginatedWithStatusPendingManagerApproval,
+    approvedByManager
 }
