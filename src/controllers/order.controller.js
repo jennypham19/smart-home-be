@@ -52,6 +52,24 @@ const handleSendApprovalForCompletedOrder = catchAsync(async(req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: 'Gửi duyệt đơn hoàn thành thành công.'})
 })
 
+// Lấy toàn bộ đơn hàng theo trạng thái pending_approval (không phân trang)
+const handleGetAllOrders = catchAsync(async(req, res) => {
+    const orders = await orderService.getAllOrders();
+    res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công.", data: orders })
+})
+
+// duyệt đơn bởi nhân viên tạo đơn
+const handleApprovedByAppEmployee = catchAsync(async(req, res) => {
+    await orderService.approvedByAppEmployee(req.params.id, req.body.status);
+    res.status(StatusCodes.OK).send({ success: true, message: "Duyệt đơn hàng thành công." })
+})
+
+// gửi đơn lên chờ quản lý duyệt
+const handleSendApprovalOrderToManager = catchAsync(async(req, res) => {
+    await orderService.sendApprovalOrderToManager(req.params.id, req.body.status);
+    res.status(StatusCodes.OK).send({ success: true, message: "Gửi duyệt thành công." })
+})
+
 module.exports = {
     handleGenerateOrderCode,
     handleCreateOrderWithProduct,
@@ -60,5 +78,8 @@ module.exports = {
     handleGetDetailOrderWithProducts,
     handleUpdateProductChecked,
     handleUpdateStatusForCompletedOrder,
-    handleSendApprovalForCompletedOrder
+    handleSendApprovalForCompletedOrder,
+    handleGetAllOrders,
+    handleApprovedByAppEmployee,
+    handleSendApprovalOrderToManager
 }

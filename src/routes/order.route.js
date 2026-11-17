@@ -5,6 +5,12 @@ const orderController = require('../controllers/order.controller');
 const orderValidation = require('../validations/order.validation');
 const baseValidation = require('../validations/base.validation');
 
+// Lấy toàn bộ đơn hàng sản xuất theo trạng thái pending_approval (không phân trang)
+router.get(
+    '/list-production-orders-with-status',
+    orderController.handleGetAllOrders
+)
+
 // API sinh mã đơn hàng
 router.get(
     '/generate-order-code',
@@ -54,4 +60,19 @@ router.patch(
     validate(orderValidation.updateStatusForCompletedOrder),
     orderController.handleSendApprovalForCompletedOrder
 )
+
+// duyệt đơn bởi nhân viên tạo đơn
+router.patch(
+    '/order-approved-by-app-employee/:id',
+    validate(orderValidation.updateStatusForCompletedOrder),
+    orderController.handleApprovedByAppEmployee
+)
+
+// gửi đơn lên chờ quản lý duyệt
+router.patch(
+    '/order-sent-approval-to-manager/:id',
+    validate(orderValidation.updateStatusForCompletedOrder),
+    orderController.handleSendApprovalOrderToManager
+)
+
 module.exports = router

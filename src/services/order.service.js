@@ -153,6 +153,54 @@ const getListOrderWithProduct = async(queryOptions) => {
     }
 }
 
+// Lấy toàn bộ đơn hàng theo trạng thái approved (không phân trang)
+const getAllOrders = async() => {
+    try {
+        const orderDB = await Order.findAll({
+            where: {
+                status: 'approved'
+            },
+            include: [
+                {
+                    model: ProductOrder,
+                    as: 'OrderProducts'
+                }
+            ],
+            order: [[ 'created_at', 'DESC']],
+            distinct: true
+        });
+        return orderDB.map((order) => {
+            const newOrder = order.toJSON();
+            return {
+                id: newOrder.id,
+                code: newOrder.code,
+                name: newOrder.name,
+                productQuantity: newOrder.product_quantity,
+                process: newOrder.process,
+                status: newOrder.status,
+                createdBy: newOrder.created_by,
+                products: (newOrder.OrderProducts ?? [])
+                    .filter((el) => el.order_id === newOrder.id)
+                    .map((product) => {
+                        return{
+                            id: product.id,
+                            name: product.name,
+                            quantity: product.quantity,
+                            description: product.description,
+                            isChecked: product.is_checked,
+                            createdAt: product.created_at,
+                            updatedAt: product.updated_at,
+                        }
+                    }),
+                createdAt: newOrder.created_at,
+                updatedAt: newOrder.updated_at,
+            }
+        });
+    } catch (error) {
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi khi lấy toàn bộ đơn hàng: ' + error.message);
+    }
+}
+
 // Lấy danh sách đơn hàng cho nhân viên sản xuất: nhóm theo 3 trạng thái + tổng số lượng từng trạng thái
 const getListOrdersForProductionEmployee = async() => {
     try {
@@ -385,6 +433,32 @@ const sendApprovalForOrderCompleted = async(id, status) => {
     }
 }
 
+// duyệt đơn bởi nhân viên tạo đơn
+const approvedByAppEmployee = async(id, status) => {
+    try {
+        const order = await Order.findByPk(id);
+        order.status = status,
+        await order.save()        
+        await emitOrdersUpdated(); // danh sách đơn hàng
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
+    }
+}
+
+// gửi đơn lên chờ quản lý duyệt
+const sendApprovalOrderToManager = async(id, status) => {
+    try {
+        const order = await Order.findByPk(id);
+        order.status = status,
+        await order.save()        
+        // await emitOrdersUpdated(); // danh sách đơn hàng
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
+    }
+}
+
 module.exports = {
     getNewOrderCode,
     createOrderWithProduct,
@@ -394,5 +468,8 @@ module.exports = {
     getDetailOrderWithProduct,
     updateProductChecked,
     updateStatusForOrderCompleted,
-    sendApprovalForOrderCompleted
+    sendApprovalForOrderCompleted,
+    getAllOrders,
+    approvedByAppEmployee,
+    sendApprovalOrderToManager
 }
