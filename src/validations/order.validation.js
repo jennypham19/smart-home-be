@@ -12,6 +12,25 @@ const createOrder = {
     })
 }
 
+
+// Chỉnh sửa
+const updateOrder = {
+    params: Joi.object().keys({
+        id: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        code: Joi.string().required(),
+        name: Joi.string().required().messages({
+            'string.empty': 'Tên đơn hàng không được để trống',
+            'any.required': 'Tên khách hàng là trường bắt buộc'
+        }),
+        productQuantity: Joi.number().integer().required(),
+        productsOrder: Joi.array().optional(),
+        createdBy: Joi.string().required(),
+    })
+}
+
+
 // Tick/untick 1 sản phẩm trong đơn
 const updateProductChecked = {
     params: Joi.object().keys({
@@ -37,5 +56,6 @@ const updateStatusForCompletedOrder = {
 module.exports = {
     createOrder,
     updateProductChecked,
-    updateStatusForCompletedOrder
+    updateStatusForCompletedOrder,
+    updateOrder
 }

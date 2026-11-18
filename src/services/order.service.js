@@ -37,7 +37,7 @@ const createOrderWithProduct = async(orderBody) => {
         const { code, name, productQuantity, productsOrder, createdBy } = orderBody;
         // 1. Tạo mới order
         const order = await Order.create({
-            code, name, product_quantity: productQuantity, created_by: createdBy
+            code, name, product_quantity: productQuantity, created_by: createdBy, status: 'pending_manager_approval'
         }, { transaction });
 
         // 2. Lưu sản phẩm đơn hàng
@@ -54,6 +54,62 @@ const createOrderWithProduct = async(orderBody) => {
 
         // Sau khi tạo đơn thành công -> đẩy lại danh sách mới cho màn hình nhân viên sản xuất (realtime)
         await emitProductionOrdersUpdated();
+        await emitAllOrderUpdated();
+    } catch (error) {
+        await transaction.rollback();
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message)
+    }
+}
+
+// Chỉnh sửa đơn hàng + sản phẩm
+const updateOrderWithProduct = async(id, orderBody) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const { code, name, productQuantity, productsOrder, createdBy } = orderBody;
+        // 1. Lấy thông tin đơn hàng
+        const orderDB = await Order.findByPk(id, { transaction });
+        if(!orderDB) {
+            throw new ApiError(StatusCodes.NOT_FOUND, "Không tồn tại bản ghi nào.")
+        }
+        // 2. Cập nhật lại thông tin order
+        await orderDB.update({
+            code,
+            name,
+            product_quantity: productQuantity,
+            created_by: createdBy
+        }, { transaction });
+
+        // 3. Xóa danh sách sản phẩm cũ của đơn hàng
+        await ProductOrder.destroy({
+            where: {
+                order_id: id
+            },
+            transaction
+        });
+
+        // 4. Thêm danh sách sản phẩm mới
+        if (productsOrder?.length > 0) {
+            const productData = productsOrder.map((product) => ({
+                sku_code: product.skuCode,
+                name: product.name,
+                quantity: product.quantity,
+                description: product.description,
+                order_id: id
+            }));
+
+            await ProductOrder.bulkCreate(productData, {
+                transaction
+            });
+        }
+
+        // 5. Commit transaction
+        await transaction.commit();
+
+        // 6. Sau khi tạo đơn thành công -> đẩy lại danh sách mới cho màn hình nhân viên sản xuất (realtime)
+        await emitProductionOrdersUpdated();
+        await emitOrdersUpdated();
+        await emitAllOrderUpdated()
     } catch (error) {
         await transaction.rollback();
         if(error instanceof ApiError) throw error;
@@ -77,6 +133,15 @@ const emitOrdersUpdated = async() => {
     try {
         const data = await getListOrderWithProduct({ page: 1, limit: 1000 });
         broadcast('orders:updated', data);
+    } catch (error) {
+        // Không để lỗi broadcast làm hỏng luồng chính (đơn đã được tạo thành công)
+        console.error('Lỗi khi broadcast production_orders:updated: ' + error.message);
+    }
+}
+
+const emitAllOrderUpdated = async() => {
+    try {
+        const data = await getAllOrders();
     } catch (error) {
         // Không để lỗi broadcast làm hỏng luồng chính (đơn đã được tạo thành công)
         console.error('Lỗi khi broadcast production_orders:updated: ' + error.message);
@@ -129,6 +194,7 @@ const getListOrderWithProduct = async(queryOptions) => {
                         return{
                             id: product.id,
                             name: product.name,
+                            skuCode: product.sku_code,
                             quantity: product.quantity,
                             description: product.description,
                             isChecked: product.is_checked,
@@ -158,7 +224,7 @@ const getAllOrders = async() => {
     try {
         const orderDB = await Order.findAll({
             where: {
-                status: 'approved'
+                status: 'production_completed'
             },
             include: [
                 {
@@ -185,6 +251,7 @@ const getAllOrders = async() => {
                         return{
                             id: product.id,
                             name: product.name,
+                            skuCode: product.sku_code,
                             quantity: product.quantity,
                             description: product.description,
                             isChecked: product.is_checked,
@@ -233,6 +300,7 @@ const getAllOrdersWithStatusPendingManagerApproval = async() => {
                         return{
                             id: product.id,
                             name: product.name,
+                            skuCode: product.sku_code,
                             quantity: product.quantity,
                             description: product.description,
                             isChecked: product.is_checked,
@@ -286,6 +354,7 @@ const getAllOrdersPaginatedWithStatusPendingManagerApproval = async(queryOptions
                         return{
                             id: product.id,
                             name: product.name,
+                            skuCode: product.sku_code,
                             quantity: product.quantity,
                             description: product.description,
                             isChecked: product.is_checked,
@@ -346,6 +415,7 @@ const getListOrdersForProductionEmployee = async() => {
                         return {
                             id: product.id,
                             name: product.name,
+                            skuCode: product.sku_code,
                             quantity: product.quantity,
                             description: product.description,
                             isChecked: product.is_checked,
@@ -417,6 +487,7 @@ const getDetailOrderWithProduct = async(id) => {
                     return {
                         id: product.id,
                         name: product.name,
+                        skuCode: product.sku_code,
                         quantity: product.quantity,
                         description: product.description,
                         isChecked: product.is_checked,
@@ -594,5 +665,6 @@ module.exports = {
     sendApprovalOrderToManager,
     getAllOrdersWithStatusPendingManagerApproval,
     getAllOrdersPaginatedWithStatusPendingManagerApproval,
-    approvedByManager
+    approvedByManager,
+    updateOrderWithProduct
 }

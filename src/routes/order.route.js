@@ -17,10 +17,18 @@ router.get(
     orderController.handleGenerateOrderCode
 );
 
+// tạo đơn hàng sản xuất
 router.post(
     '/order-with-products-created',
     validate(orderValidation.createOrder),
     orderController.handleCreateOrderWithProduct
+)
+
+// chỉnh sửa đơn hàng 
+router.put(
+    '/order-with-products-updated/:id',
+    validate(orderValidation.updateOrder),
+    orderController.handleUpdateOrderWithProduct
 )
 
 router.get(
