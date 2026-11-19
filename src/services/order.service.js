@@ -117,6 +117,21 @@ const updateOrderWithProduct = async(id, orderBody) => {
     }
 }
 
+// Tạo đơn hàng giao nhận
+const createOrderShipping = async(orderBody) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const { deliveryOrder, deliveryPerson, recipient } = orderBody 
+        // 1. Kiểm tra xem thông tin người giao hàng có tồn tại không thông qua phone, 
+
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback();
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
+    }
+}
+
 // Lấy dữ liệu mới nhất và broadcast tới tất cả client để cập nhật data + statusCounts realtime
 const emitProductionOrdersUpdated = async() => {
     try {

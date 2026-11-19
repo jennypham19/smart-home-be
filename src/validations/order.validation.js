@@ -53,9 +53,37 @@ const updateStatusForCompletedOrder = {
     })
 }
 
+// tạo đơn giao nhận
+const createOrderShipping = {
+    body: Joi.object().keys({
+    deliveryOrder: Joi.object({
+        deliveryOrderCode: Joi.string().required(),
+        deliveryDate: Joi.date().required(),
+        shippingCarrier: Joi.string().allow(null, ''),
+        shippingFee: Joi.string().required(),
+        createdBy: Joi.string().uuid().required(),
+        orderId: Joi.string().uuid().required()
+    }).required(),
+
+    deliveryPerson: Joi.object({
+        nameDeliveryPerson: Joi.string().required(),
+        phoneDeliveryPerson: Joi.string().required(),
+        licensePlate: Joi.string().required(),
+        addressGetDelivery: Joi.string().required()
+    }).required(),
+
+    recipient: Joi.object({
+        nameRecipient: Joi.string().required(),
+        phoneRecipient: Joi.string().required(),
+        addressReceivedDelivery: Joi.string().required()
+    }).required() 
+    })
+}
+
 module.exports = {
     createOrder,
     updateProductChecked,
     updateStatusForCompletedOrder,
-    updateOrder
+    updateOrder,
+    createOrderShipping
 }
