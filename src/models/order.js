@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
             Order.hasMany(models.ProductOrder, {
                 foreignKey: 'order_id',
                 as: 'OrderProducts'
+            });
+            Order.hasOne(models.DeliveryOrder, {
+                foreignKey: 'order_id',
+                as: 'OrderOfDelivery'
             })
         }
     }
@@ -57,7 +61,7 @@ module.exports = (sequelize, DataTypes) => {
         created_by: {
             type: DataTypes.UUID,
             allowNull: false
-        }
+        },
     }, {
         sequelize,
         modelName: 'Order',
