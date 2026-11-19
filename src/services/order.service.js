@@ -1,5 +1,5 @@
 const { StatusCodes } = require('http-status-codes');
-const { Order, ProductOrder, Product } = require('../models');
+const { Order, ProductOrder, Product, DeliveryOrder, DeliveryPerson, Recipient } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op, QueryTypes } = require('sequelize');
 const db = require('../models');
@@ -122,9 +122,70 @@ const createOrderShipping = async(orderBody) => {
     const transaction = await db.sequelize.transaction();
     try {
         const { deliveryOrder, deliveryPerson, recipient } = orderBody 
-        // 1. Kiểm tra xem thông tin người giao hàng có tồn tại không thông qua phone, 
+        // 1. Kiểm tra xem thông tin người giao hàng và người nhận hàng có tồn tại không thông qua phone
+        const deliveryPersonDB = await DeliveryPerson.findOne({
+            where: { phone: deliveryPerson.phoneDeliveryPerson },
+            transaction, 
+        })
+        const recipientDB = await Recipient.findOne({
+            where: { phone: recipient.phoneRecipient },
+            transaction
+        })
 
+        // 1.1. Nếu tồn tại thì không thêm mới, chỉ thêm mới bản ghi deliveryOrder
+        if(deliveryPersonDB && recipientDB){
+            // Tạo đơn giao nhận
+            await DeliveryOrder.create({
+                delivery_order_code: deliveryOrder.deliveryOrderCode,
+                order_id: deliveryOrder.orderId,
+                delivery_person_id: deliveryPersonDB.id,
+                recipient_id: recipientDB.id,
+                delivery_date: deliveryOrder.deliveryDate,
+                shipping_fee: deliveryOrder.shippingFee,
+                shipping_carrier: deliveryOrder.shippingCarrier ? deliveryOrder.shippingCarrier : null,
+                created_by: deliveryOrder.createdBy,
+                address: deliveryPerson.addressGetDelivery
+            }, { transaction })
+        }
+
+        // 1.2. Nếu không tồn tại thì thêm cả 3 bản ghi
+        if(!deliveryPersonDB && !recipientDB){
+            // Tạo người giao hàng
+            const newDeliveryPersonDB = await DeliveryPerson.create({
+                full_name: deliveryPerson.nameDeliveryPerson,
+                phone: deliveryPerson.phoneDeliveryPerson,
+                license_plate: deliveryPerson.licensePlate
+            }, { transaction })
+
+            // Tạo người nhận hàng
+            const newRecipientDB = await Recipient.create({
+                full_name: recipient.nameRecipient,
+                phone: recipient.phoneRecipient,
+                address: recipient.addressReceivedDelivery
+            }, { transaction })
+
+            // Tạo đơn giao nhận
+            await DeliveryOrder.create({
+                delivery_order_code: deliveryOrder.deliveryOrderCode,
+                order_id: deliveryOrder.orderId,
+                delivery_person_id: newDeliveryPersonDB.id,
+                recipient_id: newRecipientDB.id,
+                delivery_date: deliveryOrder.deliveryDate,
+                shipping_fee: deliveryOrder.shippingFee,
+                shipping_carrier: deliveryOrder.shippingCarrier ? deliveryOrder.shippingCarrier : null,
+                created_by: deliveryOrder.createdBy,
+                address: deliveryPerson.addressGetDelivery
+            }, { transaction })
+        }
+
+        // 2. Cập nhật trường is_order_shipping_created trong bảng Orders
+        const orderDB = await Order.findByPk(deliveryOrder.orderId, { transaction });
+        orderDB.is_order_shipping_created = true,
+        await orderDB.save({ transaction })
+
+        // 3. Xác nhận transaction
         await transaction.commit();
+        await emitOrdersUpdated()
     } catch (error) {
         await transaction.rollback();
         if(error instanceof ApiError) throw error;
@@ -203,6 +264,7 @@ const getListOrderWithProduct = async(queryOptions) => {
                 process: newOrder.process,
                 status: newOrder.status,
                 createdBy: newOrder.created_by,
+                isOrderShippingCreated: newOrder.is_order_shipping_created,
                 products: (newOrder.OrderProducts ?? [])
                     .filter((el) => el.order_id === newOrder.id)
                     .map((product) => {
@@ -260,6 +322,7 @@ const getAllOrders = async() => {
                 process: newOrder.process,
                 status: newOrder.status,
                 createdBy: newOrder.created_by,
+                isOrderShippingCreated: newOrder.is_order_shipping_created,
                 products: (newOrder.OrderProducts ?? [])
                     .filter((el) => el.order_id === newOrder.id)
                     .map((product) => {
@@ -309,6 +372,7 @@ const getAllOrdersWithStatusPendingManagerApproval = async() => {
                 process: newOrder.process,
                 status: newOrder.status,
                 createdBy: newOrder.created_by,
+                isOrderShippingCreated: newOrder.is_order_shipping_created,
                 products: (newOrder.OrderProducts ?? [])
                     .filter((el) => el.order_id === newOrder.id)
                     .map((product) => {
@@ -363,6 +427,7 @@ const getAllOrdersPaginatedWithStatusPendingManagerApproval = async(queryOptions
                 process: newOrder.process,
                 status: newOrder.status,
                 createdBy: newOrder.created_by,
+                isOrderShippingCreated: newOrder.is_order_shipping_created,
                 products: (newOrder.OrderProducts ?? [])
                     .filter((el) => el.order_id === newOrder.id)
                     .map((product) => {
@@ -424,6 +489,7 @@ const getListOrdersForProductionEmployee = async() => {
                 process: newOrder.process,
                 status: newOrder.status,
                 createdBy: newOrder.created_by,
+                isOrderShippingCreated: newOrder.is_order_shipping_created,
                 products: (newOrder.OrderProducts ?? [])
                     .filter((el) => el.order_id === newOrder.id)
                     .map((product) => {
@@ -496,6 +562,7 @@ const getDetailOrderWithProduct = async(id) => {
             process: newOrder.process,
             status: newOrder.status,
             createdBy: newOrder.created_by,
+            isOrderShippingCreated: newOrder.is_order_shipping_created,
             products: (newOrder.OrderProducts ?? [])
                 .filter((el) => el.order_id === newOrder.id)
                 .map((product) => {
@@ -681,5 +748,6 @@ module.exports = {
     getAllOrdersWithStatusPendingManagerApproval,
     getAllOrdersPaginatedWithStatusPendingManagerApproval,
     approvedByManager,
-    updateOrderWithProduct
+    updateOrderWithProduct,
+    createOrderShipping
 }

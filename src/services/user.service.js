@@ -63,6 +63,48 @@ const createdAccount = async(userBody) => {
     }
 }
 
+// Chỉnh sửa thông tin tài khoản
+const updateAccount = async(id, userBody) => {
+    try {
+        const { avatarUrl, fullName, phone, email, role, address } = userBody;
+        const accountDB = await User.findByPk(id);
+        await accountDB.update({
+            avatar_url: avatarUrl,
+            full_name: fullName,
+            phone,
+            email,
+            role,
+            address
+        })
+        await emitAccountUpdate();
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Đã có lỗi xảy ra: " + error.message)
+    }
+}
+
+// Xóa tài khoản, cập nhật lại is_deleted
+const deleteAccount = async(id) => {
+    try {
+        const accountDB = await User.findByPk(id);
+        accountDB.is_deleted = -1;
+        accountDB.save();
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Đã có lỗi xảy ra: " + error.message)
+    }
+}
+
+const emitAccountUpdate = async() => {
+    try {
+        const list = await queryListAccounts({ page: 1, limit: 1000 });
+        broadcast('accounts:updated', list);
+    } catch (error) {
+        // Không để lỗi broadcast làm hỏng luồng chính (đơn đã được tạo thành công)
+        console.error('Lỗi khi broadcast accounts:updated: ' + error.message);
+    }
+}
+
 // Lấy ra danh sách thông tin nhân sự + search tài khoản
 const queryListAccounts = async(queryOptions) => {
     try {
@@ -117,5 +159,7 @@ const queryListAccounts = async(queryOptions) => {
 
 module.exports = {
     createdAccount,
-    queryListAccounts
+    queryListAccounts,
+    updateAccount,
+    deleteAccount
 }

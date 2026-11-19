@@ -13,6 +13,11 @@ router.use(protect, authorize('admin'));
 // tạo
 router.post('/user-account-created', validate(userValidation.createAccount), userController.createAccountUser)
 
+router.put(
+    '/user-account-updated/:id',
+    validate(userValidation.updateAccount),
+    userController.updateAccountUser
+)
 // lấy danh sách
 router.get(
     '/get-list-accounts',

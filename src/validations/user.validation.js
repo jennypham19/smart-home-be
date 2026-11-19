@@ -26,6 +26,26 @@ const createAccount = {
     })
 }
 
+const updateAccount = {
+    params: Joi.object().keys({
+        id: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        avatarUrl: Joi.string().optional().allow(null),
+        fullName: Joi.string().required().messages({
+            'string.empty': "Họ tên không được để trống",
+            'any.required': "Họ tên là trường bắt buộc"
+        }),
+        phone: Joi.string().optional().allow(null),
+        email: Joi.string().optional().allow(null),
+        role: Joi.string().required().messages({
+            'string.empty': "Vai trò không được để trống",
+            'any.required': "Vai trò là trường bắt buộc"    
+        }),
+        address: Joi.string().optional().allow(null)
+    })
+}
+
 // Lấy ra danh sách + search
 const getQuery = {
     query: Joi.object().keys({
@@ -38,5 +58,6 @@ const getQuery = {
 
 module.exports = {
     createAccount,
-    getQuery
+    getQuery,
+    updateAccount
 }

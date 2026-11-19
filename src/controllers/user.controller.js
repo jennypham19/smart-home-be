@@ -9,6 +9,12 @@ const createAccountUser = catchAsync(async(req, res) => {
     res.status(StatusCodes.CREATED).send({ success: true, message: 'Tạo tài khoản cho nhân sự thành công.', data: user })
 })
 
+// Chỉnh sửa thông tin
+const updateAccountUser = catchAsync(async(req, res) => {
+    await userService.updateAccount(req.params.id, req.body);
+    res.status(StatusCodes.OK).send({ success: true, message: 'Cập nhật thông tin nhân sự thành công.'})
+})
+
 // Lấy ra danh sách + search tài khoản
 const getListAccounts = catchAsync(async (req, res) => {
     const queryOptions = pick(req.query, ['page', 'limit', 'role', 'searchTerm']);
@@ -18,5 +24,6 @@ const getListAccounts = catchAsync(async (req, res) => {
 
 module.exports = {
     createAccountUser,
-    getListAccounts
+    getListAccounts,
+    updateAccountUser
 }

@@ -94,6 +94,10 @@ module.exports = (sequelize, DataTypes) => {
         approved_by: {
             type: DataTypes.UUID,
             allowNull: true
+        },
+        address: {
+            type: DataTypes.TEXT,
+            allowNull: true
         }
     }, {
         sequelize,

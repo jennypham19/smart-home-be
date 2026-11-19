@@ -15,10 +15,16 @@ const handleCreateOrderWithProduct = catchAsync(async(req, res) => {
     res.status(StatusCodes.CREATED).send({ success: true, message: "Tạo đơn hàng sản xuất thành công"})
 })
 
-// Tạo đơn hàng + sản phẩm
+// Chỉnh sửa đơn hàng + sản phẩm
 const handleUpdateOrderWithProduct = catchAsync(async(req, res) => {
     await orderService.updateOrderWithProduct(req.params.id, req.body);
     res.status(StatusCodes.OK).send({ success: true, message: "Chỉnh sửa đơn hàng sản xuất thành công"})
+})
+
+// Tạo đơn hàng giao nhận
+const handleCreateOrderShipping = catchAsync(async(req, res) => {
+    await orderService.createOrderShipping(req.body);
+    res.status(StatusCodes.CREATED).send({ success: true, message: "Tạo đơn hàng giao nhận thành công"})
 })
 
 // Lấy danh sách đơn hàng
@@ -110,5 +116,6 @@ module.exports = {
     handleGetAllOrdersWithStatusPendingManagerApproval,
     handleGetAllOrdersPaginatedWithStatusPendingManagerApproval,
     handleApprovedByManager,
-    handleUpdateOrderWithProduct
+    handleUpdateOrderWithProduct,
+    handleCreateOrderShipping
 }

@@ -24,6 +24,13 @@ router.post(
     orderController.handleCreateOrderWithProduct
 )
 
+// tạo đơn hàng giao nhận
+router.post(
+    '/order-shipping-created',
+    validate(orderValidation.createOrderShipping),
+    orderController.handleCreateOrderShipping
+)
+
 // chỉnh sửa đơn hàng 
 router.put(
     '/order-with-products-updated/:id',
