@@ -14,4 +14,8 @@ router.get('/list-products', validate(baseValidation.queryOptions), productContr
 
 router.get('/all-list-products', productController.handleGetAllProducts)
 
+router.delete('/product-deleted/:id', validate(baseValidation.queryOption), productController.handleDeleteProduct)
+
+router.put('/product-updated/:id', validate(productValidation.updateProduct), productController.handleUpdateProduct)
+
 module.exports = router;

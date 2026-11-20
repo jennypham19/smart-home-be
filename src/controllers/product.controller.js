@@ -21,8 +21,22 @@ const handleGetAllProducts = catchAsync(async(req, res) => {
     const allProducts = await productService.getAllProducts();
     res.status(StatusCodes.OK).send({ success: true, message: 'Lấy danh sách thành công.', data: allProducts })
 })
+
+// Xóa sản phẩm
+const handleDeleteProduct = catchAsync(async(req, res) => {
+    await productService.deleteProduct(req.params.id);
+    res.status(StatusCodes.OK).send({ success: true, message: "Xóa sản phẩm thành công."})
+})
+
+// Cập nhật sản phẩm
+const handleUpdateProduct = catchAsync(async(req, res) => {
+    await productService.updateProduct(req.params.id, req.body);
+    res.status(StatusCodes.OK).send({ success: true, message: "Chỉnh sửa sản phẩm thành công."})
+})
 module.exports = {
     createProduct,
     getListProducts,
-    handleGetAllProducts
+    handleGetAllProducts,
+    handleDeleteProduct,
+    handleUpdateProduct
 }

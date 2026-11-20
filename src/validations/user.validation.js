@@ -56,8 +56,19 @@ const getQuery = {
     })
 }
 
+// Thay đổi mật khẩu
+const changePassword = {
+    params: Joi.object().keys({
+        id: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        password: Joi.string().required()
+    })
+}
+
 module.exports = {
     createAccount,
     getQuery,
-    updateAccount
+    updateAccount,
+    changePassword
 }

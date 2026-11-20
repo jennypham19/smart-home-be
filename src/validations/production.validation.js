@@ -26,6 +26,21 @@ const createProduct = {
     })
 }
 
+const updateProduct = {
+    params: Joi.object().keys({
+        id: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        skuCode: Joi.string().required(),
+        name: Joi.string().required(),
+        brand: Joi.string().required(),
+        amount: Joi.number().integer().required(),
+        category: Joi.string().required(),
+        status: Joi.string().required()   
+    })
+}
+
 module.exports = {
-    createProduct
+    createProduct,
+    updateProduct
 }

@@ -1,5 +1,5 @@
 const { StatusCodes } = require('http-status-codes');
-const { Product } = require('../models');
+const { Product, ProductOrder } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op } = require('sequelize');
 const { broadcast } = require('../config/websocket');
@@ -113,9 +113,53 @@ const emitAmountProductUpdated = async() => {
     }
 }
 
+// Xóa sản phẩm
+const deleteProduct = async(id) => {
+    try {
+        const productDB = await Product.findByPk(id);
+        // Kiểm tra sản phẩm có tồn tại không
+        if (!productDB) {
+            throw new ApiError(StatusCodes.NOT_FOUND, "Không tìm thấy sản phẩm");
+        }
+
+        // Kiểm tra sản phẩm đã xuất hiện trong đơn sản xuất chưa
+        const producOrderDB = await ProductOrder.findAll({
+            where: { sku_code: productDB.sku_code }
+        });
+        if(producOrderDB.length > 0){
+            throw new ApiError(StatusCodes.BAD_REQUEST, `Không thể xóa sản phẩm ${productDB.name} do đã được xuất hiện trong đơn sản xuất`)
+        }
+
+        // Xóa sản phẩm
+        await productDB.destroy()
+        await emitAmountProductUpdated()
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message); 
+    }
+}
+
+// Chỉnh sửa sản phẩm
+const updateProduct = async(id, productBody) => {
+    try {
+        const { skuCode, name, brand, amount, category, status } = productBody;
+        const productDB = await Product.findByPk(id);
+        await productDB.update({
+            sku_code: skuCode,
+            name, brand, amount, category, status
+        })
+        await emitAmountProductUpdated()
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message); 
+    }
+}
+
 module.exports = {
     createdProduct,
     queryListProducts,
     getAllProducts,
-    emitAmountProductUpdated
+    emitAmountProductUpdated,
+    deleteProduct,
+    updateProduct
 }

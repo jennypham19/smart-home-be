@@ -7,6 +7,12 @@ const baseValidation = require('../validations/base.validation');
 const validate = require('../middlewares/validate');
 
 const router = express.Router();
+// Thay đổi mật khẩu tài khoản
+router.patch(
+    '/password-changed/:id',
+    validate(userValidation.changePassword),
+    userController.changePasswordAccount
+)
 
 router.use(protect, authorize('admin'));
 
@@ -24,5 +30,13 @@ router.get(
     validate(userValidation.getQuery),
     userController.getListAccounts
 )
+
+// Reset mật khẩu tài khoản
+router.patch(
+    '/account-reset-password/:id',
+    validate(userValidation.getUser),
+    userController.resetPasswordAccount
+)
+
 
 module.exports = router

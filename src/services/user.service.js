@@ -95,6 +95,52 @@ const deleteAccount = async(id) => {
     }
 }
 
+// Reset mật khẩu
+const resetPasswordAccount = async(id) => {
+    try {
+        const userDB = await User.findByPk(id);
+        if(!userDB){
+            throw new ApiError(StatusCodes.NOT_FOUND, "Không tồn tại bản ghi nào cả.")
+        }
+        // Tự sinh password ngẫu nhiên dài 6 ký tự
+        const plainPassword = crypto.randomBytes(6).toString('base64').slice(0,6);
+
+        // Hash bằng bcrypt
+        const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
+        await userDB.update({ password: hashedPassword});
+        userDB.password = undefined; // Không trả về password
+        const newUser = userDB.toJSON();
+        const userReturn = {
+            ...newUser,
+            fullName: newUser.full_name,
+            password: plainPassword
+        }
+        return userReturn;
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Đã có lỗi xảy ra: " + error.message)
+    }
+}
+
+
+// thay đổi mật khẩu
+const changePassword = async(id, password) => {
+    try {
+        const userDB = await User.findByPk(id);
+        if(!userDB){
+            throw new ApiError(StatusCodes.NOT_FOUND, "Không tồn tại bản ghi nào cả.")
+        }
+        // Hash bằng bcrypt
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await userDB.update({ password: hashedPassword});
+        userDB.password = undefined; // Không trả về password
+        return userDB.toJSON();
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Đã có lỗi xảy ra: " + error.message)
+    }
+}
 const emitAccountUpdate = async() => {
     try {
         const list = await queryListAccounts({ page: 1, limit: 1000 });
@@ -161,5 +207,7 @@ module.exports = {
     createdAccount,
     queryListAccounts,
     updateAccount,
-    deleteAccount
+    deleteAccount,
+    resetPasswordAccount,
+    changePassword
 }

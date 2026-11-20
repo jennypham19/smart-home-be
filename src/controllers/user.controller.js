@@ -22,8 +22,22 @@ const getListAccounts = catchAsync(async (req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: 'Lấy danh sách thành công.', data: accounts})
 })
 
+// Reset mật khẩu tài khoản
+const resetPasswordAccount = catchAsync(async (req, res) => {
+    const newPassword = await userService.resetPasswordAccount(req.params.id);
+    res.status(StatusCodes.OK).send({ success: true, message: "Đặt lại mật khẩu thành công", data: { newPassword } })
+})
+
+// Thay đổi mật khẩu tài khoản
+const changePasswordAccount = catchAsync(async (req, res) => {
+    await userService.changePassword(req.params.id, req.body.password);
+    res.status(StatusCodes.OK).send({ success: true, message: "Thay đổi mật khẩu thành công" })
+})
+
 module.exports = {
     createAccountUser,
     getListAccounts,
-    updateAccountUser
+    updateAccountUser,
+    resetPasswordAccount,
+    changePasswordAccount
 }
