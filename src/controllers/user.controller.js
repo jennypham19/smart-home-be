@@ -34,10 +34,17 @@ const changePasswordAccount = catchAsync(async (req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: "Thay đổi mật khẩu thành công" })
 })
 
+// Xóa tài khoản
+const handleDeleteAccount = catchAsync(async (req, res) => {
+    await userService.deleteAccount(req.params.id);
+    res.status(StatusCodes.OK).send({ success: true, message: "Xóa tài khoản thành công" })
+})
+
 module.exports = {
     createAccountUser,
     getListAccounts,
     updateAccountUser,
     resetPasswordAccount,
-    changePasswordAccount
+    changePasswordAccount,
+    handleDeleteAccount
 }

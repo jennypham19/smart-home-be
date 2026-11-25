@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'approved_by',
                 as: 'DeliveryApprovedByUser'
             });
+            DeliveryOrder.belongsTo(models.User, {
+                foreignKey: 'assigned_to',
+                as: 'DeliveryAssignedToUser'
+            });
         }
     }
 
@@ -92,6 +96,10 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false
         },
         approved_by: {
+            type: DataTypes.UUID,
+            allowNull: true
+        },
+        assigned_to: {
             type: DataTypes.UUID,
             allowNull: true
         },

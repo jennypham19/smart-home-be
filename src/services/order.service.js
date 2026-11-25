@@ -837,6 +837,32 @@ const receivedOrderByProEmployee = async(orderId, userId) => {
     }
 }
 
+// Xóa đơn hàng ở trạng thái chờ quản lý phê duyệt
+const deleteOrder = async(id) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const orderDB = await Order.findByPk(id, { transaction });
+        if(!orderDB){
+            throw new ApiError(StatusCodes.NOT_FOUND, "Không tồn tại bản ghi.")
+        }
+        // Xóa các sản phẩm thuộc đơn hàng
+        await ProductOrder.destroy({
+            where: {
+                order_id: orderDB.id
+            },
+            transaction
+        });
+
+        await orderDB.destroy({ transaction });
+        await transaction.commit();
+        
+        await emitOrdersUpdated(); // danh sách đơn hàng
+    } catch (error) {
+        await transaction.rollback()
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
+    }
+}
 module.exports = {
     getNewOrderCode,
     createOrderWithProduct,
@@ -856,5 +882,6 @@ module.exports = {
     updateOrderWithProduct,
     createOrderShipping,
     getListReceivedOrder,
-    receivedOrderByProEmployee
+    receivedOrderByProEmployee,
+    deleteOrder
 }

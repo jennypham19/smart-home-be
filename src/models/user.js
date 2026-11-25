@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'approved_by',
                 as: 'UserApprovedDeliveryOrder'
             })
+            User.hasMany(models.DeliveryOrder, {
+                foreignKey: 'assigned_to',
+                as: 'UserAssignedDeliveryOrder'
+            })
         }
     }
 

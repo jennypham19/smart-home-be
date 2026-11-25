@@ -127,4 +127,10 @@ router.patch(
     orderController.handleReceivedOrderByProEmployee
 )
 
+// Xóa đơn hàng ở trạng thái chờ phê duyệt
+router.delete(
+    '/order-with-status-pending-manager-approval-deleted/:id',
+    validate(baseValidation.queryOption),
+    orderController.handleDeleteOrder
+)
 module.exports = router

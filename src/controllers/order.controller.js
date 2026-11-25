@@ -114,6 +114,12 @@ const handleReceivedOrderByProEmployee = catchAsync(async(req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: "Tiếp nhận đơn hàng thành công." })
 })
 
+// Xóa đơn hàng ở trạng thái chờ quản lý phê duyệt
+const handleDeleteOrder = catchAsync(async(req, res) => {
+    await orderService.deleteOrder(req.params.id)
+    res.status(StatusCodes.OK).send({ success: true, message: "Xóa đơn hàng thành công" })
+})
+
 module.exports = {
     handleGenerateOrderCode,
     handleCreateOrderWithProduct,
@@ -132,5 +138,6 @@ module.exports = {
     handleUpdateOrderWithProduct,
     handleCreateOrderShipping,
     handleGetListReceivedOrders,
-    handleReceivedOrderByProEmployee
+    handleReceivedOrderByProEmployee,
+    handleDeleteOrder
 }
