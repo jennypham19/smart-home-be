@@ -49,7 +49,8 @@ const updateStatusForCompletedOrder = {
         id: Joi.string().required()
     }),
     body: Joi.object().keys({
-        status: Joi.string().required()
+        status: Joi.string().required(),
+        approvedBy: Joi.string().required()
     })
 }
 
@@ -80,10 +81,20 @@ const createOrderShipping = {
     })
 }
 
+// tiếp nhận đơn hàng
+const receivedOrderByProEmployee = {
+    params: Joi.object().keys({
+        orderId: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        userId: Joi.string().required()
+    })
+}
 module.exports = {
     createOrder,
     updateProductChecked,
     updateStatusForCompletedOrder,
     updateOrder,
-    createOrderShipping
+    createOrderShipping,
+    receivedOrderByProEmployee
 }

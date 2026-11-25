@@ -1,5 +1,5 @@
 const { StatusCodes } = require('http-status-codes');
-const { Order, ProductOrder, Product, DeliveryOrder, DeliveryPerson, Recipient } = require('../models');
+const { Order, ProductOrder, Product, DeliveryOrder, DeliveryPerson, Recipient, User } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op, QueryTypes } = require('sequelize');
 const db = require('../models');
@@ -204,7 +204,7 @@ const emitProductionOrdersUpdated = async() => {
     }
 }
 
-// Lấy dữ liệu mới nhất và broadcast tới tất cả client để cập nhật data + statusCounts realtime
+
 const emitOrdersUpdated = async() => {
     try {
         const data = await getListOrderWithProduct({ page: 1, limit: 1000 });
@@ -264,6 +264,76 @@ const getListOrderWithProduct = async(queryOptions) => {
                 process: newOrder.process,
                 status: newOrder.status,
                 createdBy: newOrder.created_by,
+                isOrderShippingCreated: newOrder.is_order_shipping_created,
+                products: (newOrder.OrderProducts ?? [])
+                    .filter((el) => el.order_id === newOrder.id)
+                    .map((product) => {
+                        return{
+                            id: product.id,
+                            name: product.name,
+                            skuCode: product.sku_code,
+                            quantity: product.quantity,
+                            description: product.description,
+                            isChecked: product.is_checked,
+                            createdAt: product.created_at,
+                            updatedAt: product.updated_at,
+                        }
+                    }),
+                createdAt: newOrder.created_at,
+                updatedAt: newOrder.updated_at,
+            }
+        })
+        return {
+            data: orders,
+            totalPages,
+            currentPage: page,
+            total: count
+        }
+        
+        
+    } catch (error) {
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi khi lấy ra danh sách: ' + error.message);
+    }
+}
+
+// Lấy danh sách đơn hàng + sản phẩm có trạng thái chờ sản xuất
+const getListReceivedOrder = async(queryOptions) => {
+    try {
+        const { page, limit, searchTerm } = queryOptions;
+        const offset = (page - 1) * limit;
+        const whereClause = { status:  'pending_production' };
+        if(searchTerm){
+            whereClause[Op.or] = [
+                { code: { [Op.iLike]: `%${searchTerm}%` }},
+                { name: { [Op.iLike]: `%${searchTerm}%` }}
+            ]
+        };
+
+        const { count, rows: ordersBD } = await Order.findAndCountAll({
+            where: whereClause,
+            include: [
+                {
+                    model: ProductOrder,
+                    as: 'OrderProducts'
+                }
+            ],
+            limit,
+            offset,
+            order: [[ 'created_at', 'DESC']],
+            distinct: true
+        })
+        const totalPages = Math.ceil(count/limit);
+        const orders = ordersBD.map((order) => {
+            const newOrder = order.toJSON();
+            return {
+                id: newOrder.id,
+                code: newOrder.code,
+                name: newOrder.name,
+                productQuantity: newOrder.product_quantity,
+                process: newOrder.process,
+                status: newOrder.status,
+                createdBy: newOrder.created_by,
+                assignedTo: newOrder.assigned_to,
                 isOrderShippingCreated: newOrder.is_order_shipping_created,
                 products: (newOrder.OrderProducts ?? [])
                     .filter((el) => el.order_id === newOrder.id)
@@ -458,7 +528,7 @@ const getAllOrdersPaginatedWithStatusPendingManagerApproval = async(queryOptions
 }
 
 // Lấy danh sách đơn hàng cho nhân viên sản xuất: nhóm theo 3 trạng thái + tổng số lượng từng trạng thái
-const getListOrdersForProductionEmployee = async() => {
+const getListOrdersForProductionEmployee = async(id) => {
     try {
         // 3 trạng thái dành cho nhân viên sản xuất
         const productionStatuses = ['pending_production', 'in_production', 'production_completed'];
@@ -466,7 +536,8 @@ const getListOrdersForProductionEmployee = async() => {
         // Lấy tất cả đơn hàng thuộc 3 trạng thái trên
         const ordersBD = await Order.findAll({
             where: {
-                status: { [Op.in]: productionStatuses }
+                status: { [Op.in]: productionStatuses },
+                assigned_to: id
             },
             include: [
                 {
@@ -720,12 +791,46 @@ const sendApprovalOrderToManager = async(id, status) => {
 }
 
 // duyệt đơn bởi quản lý
-const approvedByManager = async(id, status) => {
+const approvedByManager = async(id, body) => {
     try {
         const order = await Order.findByPk(id);
-        order.status = status,
+        order.status = body.status,
+        order.approved_by = body.approvedBy
         await order.save()        
         await emitOrdersUpdated(); // danh sách đơn hàng
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
+    }
+}
+
+// Xử lý phần tiếp nhận đơn
+/*
+    1. Tìm kiếm đơn hàng theo id đơn hàng được truyền vào
+    2. Kiểm tra assigned_to
+    2.1. Nếu assigned_to === null => gắn id của nhân viên sản xuất truyền vào, bắn emit
+    2.2. Nếu tồn tại assigned_to => bắn thông báo
+*/
+const receivedOrderByProEmployee = async(orderId, userId) => {
+    try {
+        const orderDB = await Order.findByPk(orderId);
+        if(!orderDB) {
+            throw new ApiError(StatusCodes.NOT_FOUND, "Không tồn tại bản ghi nào.")
+        }
+        if(orderDB.assigned_to){
+            if(orderDB.assigned_to === userId){
+                throw new ApiError(StatusCodes.BAD_REQUEST, "Đơn hàng này đã được chính bạn tiếp nhận.")
+            } else{
+                const userDB = await User.findByPk(orderDB.assigned_to)
+                throw new ApiError(StatusCodes.BAD_REQUEST, `Đơn hàng này đã được nhân viên ${userDB.full_name} tiếp nhận.`)                
+            }
+        }
+        if(!orderDB.assigned_to){
+            orderDB.assigned_to = userId
+            await orderDB.save()
+        }
+
+        await emitProductionOrdersUpdated();           // màn hình 3 cột (process/status)
     } catch (error) {
         if(error instanceof ApiError) throw error;
         throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
@@ -749,5 +854,7 @@ module.exports = {
     getAllOrdersPaginatedWithStatusPendingManagerApproval,
     approvedByManager,
     updateOrderWithProduct,
-    createOrderShipping
+    createOrderShipping,
+    getListReceivedOrder,
+    receivedOrderByProEmployee
 }

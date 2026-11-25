@@ -34,9 +34,16 @@ const handleGetListOrders = catchAsync(async(req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
 })
 
+// Lấy danh sách đơn hàng chờ tiếp nhận
+const handleGetListReceivedOrders = catchAsync(async(req, res) => {
+    const queryOptions = pick(req.query, ['page', 'limit', 'searchTerm']);
+    const orders = await orderService.getListReceivedOrder(queryOptions);    
+    res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
+})
+
 // Lấy danh sách đơn hàng cho nhân viên sản xuất: nhóm theo 3 trạng thái + tổng số lượng từng trạng thái
 const handleListOrdersForProductionEmployee = catchAsync(async(req, res) => {
-    const list = await orderService.getListOrdersForProductionEmployee();
+    const list = await orderService.getListOrdersForProductionEmployee(req.params.id);
     res.status(StatusCodes.OK).send({ success: true, message: 'Lấy danh sách thành công', data: list})
 })
 
@@ -97,8 +104,14 @@ const handleGetAllOrdersPaginatedWithStatusPendingManagerApproval = catchAsync(a
 
 // duyệt đơn bởi quản lý
 const handleApprovedByManager= catchAsync(async(req, res) => {
-    await orderService.approvedByManager(req.params.id, req.body.status);
+    await orderService.approvedByManager(req.params.id, req.body);
     res.status(StatusCodes.OK).send({ success: true, message: "Duyệt đơn hàng thành công." })
+})
+
+// phần tiếp nhận đơn
+const handleReceivedOrderByProEmployee = catchAsync(async(req, res) => {
+    await orderService.receivedOrderByProEmployee(req.params.orderId, req.body.userId)
+    res.status(StatusCodes.OK).send({ success: true, message: "Tiếp nhận đơn hàng thành công." })
 })
 
 module.exports = {
@@ -117,5 +130,7 @@ module.exports = {
     handleGetAllOrdersPaginatedWithStatusPendingManagerApproval,
     handleApprovedByManager,
     handleUpdateOrderWithProduct,
-    handleCreateOrderShipping
+    handleCreateOrderShipping,
+    handleGetListReceivedOrders,
+    handleReceivedOrderByProEmployee
 }

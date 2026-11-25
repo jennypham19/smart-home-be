@@ -38,14 +38,24 @@ router.put(
     orderController.handleUpdateOrderWithProduct
 )
 
+// Lấy danh sách đơn hàng
 router.get(
     '/list-orders-with-products',
     validate(baseValidation.queryOptions),
     orderController.handleGetListOrders
 )
 
+// Lấy danh sách đơn hàng chờ tiếp nhận
 router.get(
-    '/list-orders-for-production-employee',
+    '/list-received-orders',
+    validate(baseValidation.queryOptions),
+    orderController.handleGetListReceivedOrders
+)
+
+// Lấy danh sách đơn hàng cho nhân viên sản xuất: nhóm theo 3 trạng thái + tổng số lượng từng trạng thái
+router.get(
+    '/list-orders-for-production-employee/:id',
+    validate(baseValidation.queryOption),
     orderController.handleListOrdersForProductionEmployee
 )
 
@@ -108,6 +118,13 @@ router.patch(
     '/order-approved-by-manager/:id',
     validate(orderValidation.updateStatusForCompletedOrder),
     orderController.handleApprovedByManager
+)
+
+// tiếp nhận đơn hàng 
+router.patch(
+    '/order-received-by-pro-employee/:orderId',
+    validate(orderValidation.receivedOrderByProEmployee),
+    orderController.handleReceivedOrderByProEmployee
 )
 
 module.exports = router
