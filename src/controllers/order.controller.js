@@ -110,7 +110,7 @@ const handleApprovedByManager= catchAsync(async(req, res) => {
 
 // phần tiếp nhận đơn
 const handleReceivedOrderByProEmployee = catchAsync(async(req, res) => {
-    await orderService.receivedOrderByProEmployee(req.params.orderId, req.body.userId)
+    await orderService.receivedOrderByProEmployee(req.params.orderId, req.body)
     res.status(StatusCodes.OK).send({ success: true, message: "Tiếp nhận đơn hàng thành công." })
 })
 
@@ -131,6 +131,13 @@ const handleGetListExchangeOrderWithPendingApproval= catchAsync(async(req, res) 
 const handleGetListExchangeOrders = catchAsync(async(req, res) => {
     const queryOptions = pick(req.query, ['page', 'limit', 'searchTerm', 'status']);
     const orders = await orderService.getListExchangeOrders(queryOptions);    
+    res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
+})
+
+// Lấy danh sách đơn hàng sản xuất theo trạng thái đã duyệt, chờ sản xuất, đang sản xuất, đã sản xuất, bị từ chối
+const handleGetListOrdersWithStatus = catchAsync(async(req, res) => {
+    const queryOptions = pick(req.query, ['page', 'limit', 'searchTerm', 'status']);
+    const orders = await orderService.getListOrdersWithStatus(queryOptions);
     res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
 })
 
@@ -155,5 +162,6 @@ module.exports = {
     handleReceivedOrderByProEmployee,
     handleDeleteOrder,
     handleGetListExchangeOrderWithPendingApproval,
-    handleGetListExchangeOrders
+    handleGetListExchangeOrders,
+    handleGetListOrdersWithStatus
 }

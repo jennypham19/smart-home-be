@@ -144,7 +144,14 @@ router.get(
 // Lấy danh sách đơn hàng giao nhận
 router.get(
     '/exchange-orders',
-    validate(orderValidation.queryExchangeOrder),
+    validate(orderValidation.queryOrder),
     orderController.handleGetListExchangeOrders
+)
+
+// Lấy danh sách đơn hàng sản xuất theo trạng thái đã duyệt, chờ sản xuất, đang sản xuất, đã sản xuất, bị từ chối
+router.get(
+    '/list-orders-with-status',
+    validate(orderValidation.queryOrder),
+    orderController.handleGetListOrdersWithStatus
 )
 module.exports = router

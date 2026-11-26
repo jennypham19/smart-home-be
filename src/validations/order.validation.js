@@ -96,12 +96,13 @@ const receivedOrderByProEmployee = {
         orderId: Joi.string().required()
     }),
     body: Joi.object().keys({
-        userId: Joi.string().required()
+        userId: Joi.string().required(),
+        status: Joi.string().required()
     })
 }
 
 // Lấy danh sách đơn hàng giao nhận có search + status
-const queryExchangeOrder = {
+const queryOrder = {
     query: Joi.object().keys({
         page: Joi.number().integer().min(1).default(1),
         limit: Joi.number().integer().min(1).max(100).default(10),
@@ -118,5 +119,5 @@ module.exports = {
     createOrderShipping,
     receivedOrderByProEmployee,
     updateStatusForPendingApprovalOrder,
-    queryExchangeOrder
+    queryOrder
 }

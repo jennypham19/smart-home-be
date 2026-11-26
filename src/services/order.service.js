@@ -297,7 +297,7 @@ const getListReceivedOrder = async(queryOptions) => {
     try {
         const { page, limit, searchTerm } = queryOptions;
         const offset = (page - 1) * limit;
-        const whereClause = { status:  'pending_production' };
+        const whereClause = { status:  'manager_approved' };
         if(searchTerm){
             whereClause[Op.or] = [
                 { code: { [Op.iLike]: `%${searchTerm}%` }},
@@ -477,6 +477,10 @@ const getAllOrdersPaginatedWithStatusPendingManagerApproval = async(queryOptions
                 {
                     model: ProductOrder,
                     as: 'OrderProducts'
+                },
+                {
+                    model: User,
+                    as: 'OrderCreatedByUser'
                 }
             ],
             order: [[ 'created_at', 'DESC']],
@@ -492,7 +496,10 @@ const getAllOrdersPaginatedWithStatusPendingManagerApproval = async(queryOptions
                 productQuantity: newOrder.product_quantity,
                 process: newOrder.process,
                 status: newOrder.status,
-                createdBy: newOrder.created_by,
+                createdBy: {
+                    fullName: newOrder.OrderCreatedByUser.full_name,
+                    role: newOrder.OrderCreatedByUser.role
+                },
                 isOrderShippingCreated: newOrder.is_order_shipping_created,
                 products: (newOrder.OrderProducts ?? [])
                     .filter((el) => el.order_id === newOrder.id)
@@ -603,6 +610,90 @@ const getListOrdersForProductionEmployee = async(id) => {
     }
 }
 
+// Lấy danh sách đơn hàng sản xuất theo trạng thái đã duyệt, chờ sản xuất, đang sản xuất, đã sản xuất, bị từ chối
+const getListOrdersWithStatus = async(queryOptions) => {
+    try {
+        const { page, limit, searchTerm, status } = queryOptions;
+        const offset = (page - 1) * limit;
+        const orderStatuses = ['manager_approved', 'pending_production', 'in_production', 'production_completed', 'manager_rejected'];
+        const whereClause = { status: { [Op.in]: orderStatuses } };
+        if(status && status !== 'all'){
+            whereClause.status = status;
+        }
+        if(searchTerm){
+            whereClause[Op.or] = [
+                { code: { [Op.iLike]: `%${searchTerm}%` }},
+                { name: { [Op.iLike]: `%${searchTerm}%` }}
+            ]
+        };
+        const { count, rows: ordersBD } = await Order.findAndCountAll({
+            where: whereClause,
+            limit,
+            offset,
+            include: [
+                {
+                    model: ProductOrder,
+                    as: 'OrderProducts'
+                },
+                {
+                    model: User,
+                    as: 'OrderCreatedByUser'
+                },
+                {
+                    model: User,
+                    as: 'OrderApprovedByUser'
+                }
+            ],
+            order: [[ 'created_at', 'DESC']],
+            distinct: true
+        });
+        const totalPages = Math.ceil(count/limit);
+        const orders = ordersBD.map((order) => {
+            const newOrder = order.toJSON();
+            return {
+                id: newOrder.id,
+                code: newOrder.code,
+                name: newOrder.name,
+                productQuantity: newOrder.product_quantity,
+                process: newOrder.process,
+                status: newOrder.status,
+                createdBy: {
+                    fullName: newOrder.OrderCreatedByUser.full_name,
+                    role: newOrder.OrderCreatedByUser.role
+                },
+                approvedBy: {
+                    fullName: newOrder.OrderApprovedByUser.full_name,
+                    role: newOrder.OrderApprovedByUser.role
+                },
+                isOrderShippingCreated: newOrder.is_order_shipping_created,
+                products: (newOrder.OrderProducts ?? [])
+                    .filter((el) => el.order_id === newOrder.id)
+                    .map((product) => {
+                        return{
+                            id: product.id,
+                            name: product.name,
+                            skuCode: product.sku_code,
+                            quantity: product.quantity,
+                            description: product.description,
+                            isChecked: product.is_checked,
+                            createdAt: product.created_at,
+                            updatedAt: product.updated_at,
+                        }
+                    }),
+                createdAt: newOrder.created_at,
+                updatedAt: newOrder.updated_at,
+            }
+        });
+        return {
+            data: orders,
+            totalPages,
+            currentPage: page,
+            total: count
+        }
+    } catch (error) {
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Đã có lỗi xảy ra khi lấy danh sách: " + error.message)
+    }
+}
 
 // Lấy danh sách chi tiết đơn hàng
 const getDetailOrderWithProduct = async(id) => {
@@ -807,14 +898,14 @@ const approvedByManager = async(id, body) => {
     2.1. Nếu assigned_to === null => gắn id của nhân viên sản xuất truyền vào, bắn emit
     2.2. Nếu tồn tại assigned_to => bắn thông báo
 */
-const receivedOrderByProEmployee = async(orderId, userId) => {
+const receivedOrderByProEmployee = async(orderId, payload) => {
     try {
         const orderDB = await Order.findByPk(orderId);
         if(!orderDB) {
             throw new ApiError(StatusCodes.NOT_FOUND, "Không tồn tại bản ghi nào.")
         }
         if(orderDB.assigned_to){
-            if(orderDB.assigned_to === userId){
+            if(orderDB.assigned_to === payload.userId){
                 throw new ApiError(StatusCodes.BAD_REQUEST, "Đơn hàng này đã được chính bạn tiếp nhận.")
             } else{
                 const userDB = await User.findByPk(orderDB.assigned_to)
@@ -822,7 +913,8 @@ const receivedOrderByProEmployee = async(orderId, userId) => {
             }
         }
         if(!orderDB.assigned_to){
-            orderDB.assigned_to = userId
+            orderDB.assigned_to = payload.userId
+            orderDB.status = payload.status
             await orderDB.save()
         }
 
@@ -1091,5 +1183,6 @@ module.exports = {
     receivedOrderByProEmployee,
     deleteOrder,
     getListExchangeOrderWithPendingApproval,
-    getListExchangeOrders
+    getListExchangeOrders,
+    getListOrdersWithStatus
 }
