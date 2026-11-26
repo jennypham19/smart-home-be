@@ -116,7 +116,7 @@ router.patch(
 // duyệt đơn bởi quản lý
 router.patch(
     '/order-approved-by-manager/:id',
-    validate(orderValidation.updateStatusForCompletedOrder),
+    validate(orderValidation.updateStatusForPendingApprovalOrder),
     orderController.handleApprovedByManager
 )
 
@@ -132,5 +132,19 @@ router.delete(
     '/order-with-status-pending-manager-approval-deleted/:id',
     validate(baseValidation.queryOption),
     orderController.handleDeleteOrder
+)
+
+// Lấy danh sách đơn hàng giao nhận có trạng thái pending_approval (Chờ phê duyệt)
+router.get(
+    '/exchange-orders-with-pending-approval',
+    validate(baseValidation.queryOptions),
+    orderController.handleGetListExchangeOrderWithPendingApproval
+)
+
+// Lấy danh sách đơn hàng giao nhận
+router.get(
+    '/exchange-orders',
+    validate(orderValidation.queryExchangeOrder),
+    orderController.handleGetListExchangeOrders
 )
 module.exports = router

@@ -70,9 +70,10 @@ module.exports = (sequelize, DataTypes) => {
             5. Đã giao: delivered
             6. Giao thất bại: delivery_failed
             7. Đã huỷ: cancelled
+            8. Bị từ chối: rejected
         */
         delivery_status: {
-            type: DataTypes.ENUM('pending_approval', 'awaiting_pickup', 'picked_up', 'out_for_delivery', 'delivered', 'delivery_failed', 'cancelled'),
+            type: DataTypes.ENUM('pending_approval', 'awaiting_pickup', 'picked_up', 'out_for_delivery', 'delivered', 'delivery_failed', 'cancelled', 'rejected'),
             defaultValue: 'pending_approval'
         },
         note: {

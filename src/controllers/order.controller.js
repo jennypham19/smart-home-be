@@ -120,6 +120,20 @@ const handleDeleteOrder = catchAsync(async(req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: "Xóa đơn hàng thành công" })
 })
 
+// Lấy danh sách đơn hàng giao nhận có trạng thái pending_approval (Chờ phê duyệt)
+const handleGetListExchangeOrderWithPendingApproval= catchAsync(async(req, res) => {
+    const queryOptions = pick(req.query, ['page', 'limit', 'searchTerm']);
+    const orders = await orderService.getListExchangeOrderWithPendingApproval(queryOptions);    
+    res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
+})
+
+// Lấy danh sách đơn hàng giao nhận
+const handleGetListExchangeOrders = catchAsync(async(req, res) => {
+    const queryOptions = pick(req.query, ['page', 'limit', 'searchTerm', 'status']);
+    const orders = await orderService.getListExchangeOrders(queryOptions);    
+    res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
+})
+
 module.exports = {
     handleGenerateOrderCode,
     handleCreateOrderWithProduct,
@@ -139,5 +153,7 @@ module.exports = {
     handleCreateOrderShipping,
     handleGetListReceivedOrders,
     handleReceivedOrderByProEmployee,
-    handleDeleteOrder
+    handleDeleteOrder,
+    handleGetListExchangeOrderWithPendingApproval,
+    handleGetListExchangeOrders
 }

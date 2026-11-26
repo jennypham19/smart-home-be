@@ -50,6 +50,15 @@ const updateStatusForCompletedOrder = {
     }),
     body: Joi.object().keys({
         status: Joi.string().required(),
+    })
+}
+
+const updateStatusForPendingApprovalOrder = {
+    params: Joi.object().keys({
+        id: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        status: Joi.string().required(),
         approvedBy: Joi.string().required()
     })
 }
@@ -90,11 +99,24 @@ const receivedOrderByProEmployee = {
         userId: Joi.string().required()
     })
 }
+
+// Lấy danh sách đơn hàng giao nhận có search + status
+const queryExchangeOrder = {
+    query: Joi.object().keys({
+        page: Joi.number().integer().min(1).default(1),
+        limit: Joi.number().integer().min(1).max(100).default(10),
+        searchTerm: Joi.string().optional(),
+        status: Joi.string().optional()
+    })
+}
+
 module.exports = {
     createOrder,
     updateProductChecked,
     updateStatusForCompletedOrder,
     updateOrder,
     createOrderShipping,
-    receivedOrderByProEmployee
+    receivedOrderByProEmployee,
+    updateStatusForPendingApprovalOrder,
+    queryExchangeOrder
 }
