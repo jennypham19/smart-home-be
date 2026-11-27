@@ -41,6 +41,13 @@ const handleGetListReceivedOrders = catchAsync(async(req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
 })
 
+// Lấy danh sách đơn hàng giao nhận chờ tiếp nhận
+const handleGetListReceivedExchangeOrders = catchAsync(async(req, res) => {
+    const queryOptions = pick(req.query, ['page', 'limit', 'searchTerm']);
+    const orders = await orderService.getListExchangeOrdersReceived(queryOptions);    
+    res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
+})
+
 // Lấy danh sách đơn hàng cho nhân viên sản xuất: nhóm theo 3 trạng thái + tổng số lượng từng trạng thái
 const handleListOrdersForProductionEmployee = catchAsync(async(req, res) => {
     const list = await orderService.getListOrdersForProductionEmployee(req.params.id);
@@ -114,6 +121,12 @@ const handleReceivedOrderByProEmployee = catchAsync(async(req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: "Tiếp nhận đơn hàng thành công." })
 })
 
+// tiếp nhận đơn hàng bởi nhân viên giao
+const handleReceivedOrderByExchangeEmployee = catchAsync(async(req, res) => {
+    await orderService.receivedOrderByExchangeEmployee(req.params.orderId, req.body)
+    res.status(StatusCodes.OK).send({ success: true, message: "Tiếp nhận đơn hàng thành công." })
+})
+
 // Xóa đơn hàng ở trạng thái chờ quản lý phê duyệt
 const handleDeleteOrder = catchAsync(async(req, res) => {
     await orderService.deleteOrder(req.params.id)
@@ -141,6 +154,25 @@ const handleGetListOrdersWithStatus = catchAsync(async(req, res) => {
     res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
 })
 
+// duyệt đơn giao nhận bởi quản lý
+const handleApprovedExchangeOrderByManager= catchAsync(async(req, res) => {
+    await orderService.approvedExchangeOrderByManager(req.params.id, req.body);
+    res.status(StatusCodes.OK).send({ success: true, message: "Duyệt đơn hàng thành công." })
+})
+
+// Lấy danh sách đơn hàng giao nhận chờ lấy hàng
+const handleGetListExchangeOrdersWithAwaitingPickup= catchAsync(async(req, res) => {
+    const queryOptions = pick(req.query, ['page', 'limit', 'searchTerm']);
+    const orders = await orderService.getListExchangeOrdersWithAwaitingPickup(queryOptions);    
+    res.status(StatusCodes.OK).send({ success: true, message: "Lấy danh sách đơn hàng thành công", data: orders })
+})
+
+// cập nhật trạng thái giao hàng theo từng bước (tick vòng tròn / nút Thành công - Thất bại)
+const handleUpdateDeliveryStatusByStep = catchAsync(async(req, res) => {
+    const deliveryOrder = await orderService.updateDeliveryStatusByStep(req.params.id, req.body.result);
+    res.status(StatusCodes.OK).send({ success: true, message: "Cập nhật trạng thái giao hàng thành công", data: deliveryOrder })
+})
+
 module.exports = {
     handleGenerateOrderCode,
     handleCreateOrderWithProduct,
@@ -163,5 +195,10 @@ module.exports = {
     handleDeleteOrder,
     handleGetListExchangeOrderWithPendingApproval,
     handleGetListExchangeOrders,
-    handleGetListOrdersWithStatus
+    handleGetListOrdersWithStatus,
+    handleApprovedExchangeOrderByManager,
+    handleGetListReceivedExchangeOrders,
+    handleReceivedOrderByExchangeEmployee,
+    handleGetListExchangeOrdersWithAwaitingPickup,
+    handleUpdateDeliveryStatusByStep
 }

@@ -1161,6 +1161,350 @@ const getListExchangeOrders = async(queryOptions) => {
     }
 }
 
+// Lấy danh sách đơn hàng giao nhận chờ tiếp nhận
+const getListExchangeOrdersReceived = async(queryOptions) => {
+    try {
+        const { page, limit, searchTerm } = queryOptions;
+        const offset = (page - 1) * limit;  
+        const whereClause = { delivery_status: "manager_approved" };
+        // if(status && status !== 'all'){
+        //     whereClause.delivery_status = status;
+        // }
+        if(searchTerm){
+            whereClause[Op.or] = [
+                { delivery_order_code: { [Op.iLike]: `%${searchTerm}%` }},
+            ]
+        };
+        const { count, rows: exchangeOrdersBD } = await DeliveryOrder.findAndCountAll({
+            where: whereClause,
+            limit,
+            offset,
+            include: [
+                {
+                    model: Order,
+                    as: 'DeliveryOrderInfo',
+                    include: [{ model: ProductOrder, as: 'OrderProducts' }]
+                },
+                {
+                    model: DeliveryPerson,
+                    as: 'DeliveryPerson'
+                },
+                {
+                    model: Recipient,
+                    as: 'Recipient'
+                },
+                {
+                    model: User,
+                    as: 'DeliveryCreatedByUser'
+                }
+            ],
+            order: [[ 'created_at', 'DESC']],
+            distinct: true
+        })
+        const totalPages = Math.ceil(count/limit);
+        const exchangeOrders = exchangeOrdersBD.map((exchangeOrder) => {
+            const newExchangeOrder = exchangeOrder.toJSON();
+            return {
+                id: newExchangeOrder.id,
+                deliveryOrderCode: newExchangeOrder.delivery_order_code,
+                deliveryOrderName: newExchangeOrder.delivery_order_code.split("-")[1],
+                createdBy: newExchangeOrder.created_by,
+                assignedTo: newExchangeOrder.assigned_to,
+                approvedBy: newExchangeOrder.approved_by,
+                order: {
+                    id: newExchangeOrder.DeliveryOrderInfo.id,
+                    code: newExchangeOrder.DeliveryOrderInfo.code,
+                    name: newExchangeOrder.DeliveryOrderInfo.name,
+                    productQuantity: newExchangeOrder.DeliveryOrderInfo.product_quantity,
+                    process: newExchangeOrder.DeliveryOrderInfo.process,
+                    status: newExchangeOrder.DeliveryOrderInfo.status,
+                    createdBy: newExchangeOrder.DeliveryOrderInfo.created_by,
+                    isOrderShippingCreated: newExchangeOrder.DeliveryOrderInfo.is_order_shipping_created,
+                    products: (newExchangeOrder.DeliveryOrderInfo.OrderProducts ?? [])
+                        .filter((el) => el.order_id === newExchangeOrder.DeliveryOrderInfo.id)
+                        .map((product) => {
+                            return{
+                                id: product.id,
+                                name: product.name,
+                                skuCode: product.sku_code,
+                                quantity: product.quantity,
+                                description: product.description,
+                                isChecked: product.is_checked,
+                                createdAt: product.created_at,
+                                updatedAt: product.updated_at,
+                            }
+                        }),
+                },
+                deliveryPerson: {
+                    id: newExchangeOrder.DeliveryPerson.id,
+                    fullName: newExchangeOrder.DeliveryPerson.full_name,
+                    phone: newExchangeOrder.DeliveryPerson.phone,
+                    vehicleType: newExchangeOrder.DeliveryPerson.vehicle_type,
+                    licensePlate: newExchangeOrder.DeliveryPerson.license_plate,
+                },
+                recipient: {
+                    id: newExchangeOrder.Recipient.id,
+                    fullName: newExchangeOrder.Recipient.full_name,
+                    phone: newExchangeOrder.Recipient.phone,
+                    email: newExchangeOrder.Recipient.email ?? null,
+                    address: newExchangeOrder.Recipient.address
+                },
+                deliveryDate: newExchangeOrder.delivery_date,
+                deliveryStatus: newExchangeOrder.delivery_status,
+                shippingFee: newExchangeOrder.shipping_fee,
+                shippingCarrier: newExchangeOrder.shipping_carrier,
+                address: newExchangeOrder.address,
+                createdAt: newExchangeOrder.created_at,
+                updatedAt: newExchangeOrder.updated_at
+            }
+        });
+        return {
+            data: exchangeOrders,
+            totalPages,
+            currentPage: page,
+            total: count
+        }
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Đã có lỗi xảy ra: " + error.message)
+    }
+}
+
+// Lấy danh sách đơn hàng giao nhận chờ lấy hàng
+const getListExchangeOrdersWithAwaitingPickup= async(queryOptions) => {
+    try {
+        const { page, limit, searchTerm } = queryOptions;
+        const offset = (page - 1) * limit;  
+        const whereClause = { delivery_status: "awaiting_pickup" };
+        // if(status && status !== 'all'){
+        //     whereClause.delivery_status = status;
+        // }
+        if(searchTerm){
+            whereClause[Op.or] = [
+                { delivery_order_code: { [Op.iLike]: `%${searchTerm}%` }},
+            ]
+        };
+        const { count, rows: exchangeOrdersBD } = await DeliveryOrder.findAndCountAll({
+            where: whereClause,
+            limit,
+            offset,
+            include: [
+                {
+                    model: Order,
+                    as: 'DeliveryOrderInfo',
+                    include: [{ model: ProductOrder, as: 'OrderProducts' }]
+                },
+                {
+                    model: DeliveryPerson,
+                    as: 'DeliveryPerson'
+                },
+                {
+                    model: Recipient,
+                    as: 'Recipient'
+                },
+                {
+                    model: User,
+                    as: 'DeliveryCreatedByUser'
+                }
+            ],
+            order: [[ 'created_at', 'DESC']],
+            distinct: true
+        })
+        const totalPages = Math.ceil(count/limit);
+        const exchangeOrders = exchangeOrdersBD.map((exchangeOrder) => {
+            const newExchangeOrder = exchangeOrder.toJSON();
+            return {
+                id: newExchangeOrder.id,
+                deliveryOrderCode: newExchangeOrder.delivery_order_code,
+                deliveryOrderName: newExchangeOrder.delivery_order_code.split("-")[1],
+                createdBy: newExchangeOrder.created_by,
+                assignedTo: newExchangeOrder.assigned_to,
+                approvedBy: newExchangeOrder.approved_by,
+                order: {
+                    id: newExchangeOrder.DeliveryOrderInfo.id,
+                    code: newExchangeOrder.DeliveryOrderInfo.code,
+                    name: newExchangeOrder.DeliveryOrderInfo.name,
+                    productQuantity: newExchangeOrder.DeliveryOrderInfo.product_quantity,
+                    process: newExchangeOrder.DeliveryOrderInfo.process,
+                    status: newExchangeOrder.DeliveryOrderInfo.status,
+                    createdBy: newExchangeOrder.DeliveryOrderInfo.created_by,
+                    isOrderShippingCreated: newExchangeOrder.DeliveryOrderInfo.is_order_shipping_created,
+                    products: (newExchangeOrder.DeliveryOrderInfo.OrderProducts ?? [])
+                        .filter((el) => el.order_id === newExchangeOrder.DeliveryOrderInfo.id)
+                        .map((product) => {
+                            return{
+                                id: product.id,
+                                name: product.name,
+                                skuCode: product.sku_code,
+                                quantity: product.quantity,
+                                description: product.description,
+                                isChecked: product.is_checked,
+                                createdAt: product.created_at,
+                                updatedAt: product.updated_at,
+                            }
+                        }),
+                },
+                deliveryPerson: {
+                    id: newExchangeOrder.DeliveryPerson.id,
+                    fullName: newExchangeOrder.DeliveryPerson.full_name,
+                    phone: newExchangeOrder.DeliveryPerson.phone,
+                    vehicleType: newExchangeOrder.DeliveryPerson.vehicle_type,
+                    licensePlate: newExchangeOrder.DeliveryPerson.license_plate,
+                },
+                recipient: {
+                    id: newExchangeOrder.Recipient.id,
+                    fullName: newExchangeOrder.Recipient.full_name,
+                    phone: newExchangeOrder.Recipient.phone,
+                    email: newExchangeOrder.Recipient.email ?? null,
+                    address: newExchangeOrder.Recipient.address
+                },
+                deliveryDate: newExchangeOrder.delivery_date,
+                deliveryStatus: newExchangeOrder.delivery_status,
+                shippingFee: newExchangeOrder.shipping_fee,
+                shippingCarrier: newExchangeOrder.shipping_carrier,
+                address: newExchangeOrder.address,
+                createdAt: newExchangeOrder.created_at,
+                updatedAt: newExchangeOrder.updated_at
+            }
+        });
+        return {
+            data: exchangeOrders,
+            totalPages,
+            currentPage: page,
+            total: count
+        }
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Đã có lỗi xảy ra: " + error.message)
+    }
+}
+
+// duyệt đơn gioa nhận bởi quản lý
+const approvedExchangeOrderByManager = async(id, body) => {
+    try {
+        const exchangeOrder = await DeliveryOrder.findByPk(id);
+        exchangeOrder.delivery_status = body.status,
+        exchangeOrder.approved_by = body.approvedBy
+        await exchangeOrder.save()        
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
+    }
+}
+
+// tiếp nhận đơn hàng bởi nhân viên giao
+const receivedOrderByExchangeEmployee = async(orderId, payload) => {
+    try {
+        const orderDB = await DeliveryOrder.findByPk(orderId);
+        if(!orderDB) {
+            throw new ApiError(StatusCodes.NOT_FOUND, "Không tồn tại bản ghi nào.")
+        }
+        if(orderDB.assigned_to){
+            if(orderDB.assigned_to === payload.userId){
+                throw new ApiError(StatusCodes.BAD_REQUEST, "Đơn hàng này đã được chính bạn tiếp nhận.")
+            } else{
+                const userDB = await User.findByPk(orderDB.assigned_to)
+                throw new ApiError(StatusCodes.BAD_REQUEST, `Đơn hàng này đã được nhân viên ${userDB.full_name} tiếp nhận.`)                
+            }
+        }
+        if(!orderDB.assigned_to){
+            orderDB.assigned_to = payload.userId
+            orderDB.delivery_status = payload.status
+            await orderDB.save()
+        }
+
+    } catch (error) {
+        if(error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);  
+    }
+}
+
+
+/**
+ * Cập nhật trạng thái giao hàng theo từng bước khi NV tick vòng tròn.
+ * Luồng 4 bước trên UI:
+ *   1. Tạo đơn giao hàng          (đã có sẵn khi tạo đơn: pending_approval/manager_approved/awaiting_pickup)
+ *   2. Tài xế đến lấy hàng         -> picked_up
+ *   3. Tài xế trên đường giao hàng -> out_for_delivery
+ *   4. Theo nút bấm:
+ *        - Thành công -> delivered       (Tài xế giao hoàn thành)
+ *        - Thất bại   -> delivery_failed  (Tài xế giao thất bại)
+ *
+ * @param {string} deliveryOrderId - id đơn giao hàng (DeliveryOrder)
+ * @param {('success'|'failed')} [result] - chỉ cần ở bước 4 (theo nút Thành công/Thất bại)
+ */
+const DELIVERY_FINAL_STATUSES = ['delivered', 'delivery_failed', 'cancelled', 'rejected', 'manager_rejected'];
+
+const updateDeliveryStatusByStep = async (deliveryOrderId, result) => {
+    const transaction = await db.sequelize.transaction();
+    try {
+        const deliveryOrder = await DeliveryOrder.findByPk(deliveryOrderId, {
+            transaction,
+            lock: transaction.LOCK.UPDATE,
+        });
+        if (!deliveryOrder) {
+            throw new ApiError(StatusCodes.NOT_FOUND, 'Không tồn tại đơn giao hàng.');
+        }
+
+        const current = deliveryOrder.delivery_status;
+
+        // Đơn đã kết thúc thì không cho cập nhật thêm
+        if (DELIVERY_FINAL_STATUSES.includes(current)) {
+            throw new ApiError(
+                StatusCodes.BAD_REQUEST,
+                'Đơn giao hàng đã kết thúc, không thể cập nhật thêm.'
+            );
+        }
+
+        // Xác định trạng thái kế tiếp theo bước hiện tại
+        let next;
+        switch (current) {
+            // Bước 1 -> Bước 2
+            case 'pending_approval':
+            case 'manager_approved':
+            case 'awaiting_pickup':
+                next = 'picked_up'; // Tài xế đến lấy hàng
+                break;
+            // Bước 2 -> Bước 3
+            case 'picked_up':
+                next = 'out_for_delivery'; // Tài xế trên đường giao hàng
+                break;
+            // Bước 3 -> Bước 4 (theo nút bấm)
+            case 'out_for_delivery':
+                if (result === 'success') {
+                    next = 'delivered'; // Tài xế giao hoàn thành
+                } else if (result === 'failed') {
+                    next = 'delivery_failed'; // Tài xế giao thất bại
+                } else {
+                    throw new ApiError(
+                        StatusCodes.BAD_REQUEST,
+                        "Bước cuối cần chọn kết quả 'success' (Thành công) hoặc 'failed' (Thất bại)."
+                    );
+                }
+                break;
+            default:
+                throw new ApiError(
+                    StatusCodes.BAD_REQUEST,
+                    'Trạng thái hiện tại không hợp lệ để cập nhật.'
+                );
+        }
+
+        deliveryOrder.delivery_status = next;
+        // Ghi nhận thời điểm giao thành công
+        if (next === 'delivered') {
+            deliveryOrder.actual_delivery_date = new Date();
+        }
+        await deliveryOrder.save({ transaction });
+        await transaction.commit();
+
+        return deliveryOrder;
+    } catch (error) {
+        await transaction.rollback();
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, 'Đã có lỗi xảy ra: ' + error.message);
+    }
+};
+
 module.exports = {
     getNewOrderCode,
     createOrderWithProduct,
@@ -1184,5 +1528,10 @@ module.exports = {
     deleteOrder,
     getListExchangeOrderWithPendingApproval,
     getListExchangeOrders,
-    getListOrdersWithStatus
+    getListOrdersWithStatus,
+    approvedExchangeOrderByManager,
+    getListExchangeOrdersReceived,
+    receivedOrderByExchangeEmployee,
+    getListExchangeOrdersWithAwaitingPickup,
+    updateDeliveryStatusByStep
 }

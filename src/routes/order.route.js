@@ -52,6 +52,13 @@ router.get(
     orderController.handleGetListReceivedOrders
 )
 
+// Lấy danh sách đơn hàng giao nhận chờ tiếp nhận
+router.get(
+    '/list-received-exchange-orders',
+    validate(baseValidation.queryOptions),
+    orderController.handleGetListReceivedExchangeOrders
+)
+
 // Lấy danh sách đơn hàng cho nhân viên sản xuất: nhóm theo 3 trạng thái + tổng số lượng từng trạng thái
 router.get(
     '/list-orders-for-production-employee/:id',
@@ -123,8 +130,15 @@ router.patch(
 // tiếp nhận đơn hàng 
 router.patch(
     '/order-received-by-pro-employee/:orderId',
-    validate(orderValidation.receivedOrderByProEmployee),
+    validate(orderValidation.receivedOrderByEmployee),
     orderController.handleReceivedOrderByProEmployee
+)
+
+// tiếp nhận đơn hàng bởi nhân viên giao
+router.patch(
+    '/order-received-by-exchange-employee/:orderId',
+    validate(orderValidation.receivedOrderByEmployee),
+    orderController.handleReceivedOrderByExchangeEmployee
 )
 
 // Xóa đơn hàng ở trạng thái chờ phê duyệt
@@ -154,4 +168,26 @@ router.get(
     validate(orderValidation.queryOrder),
     orderController.handleGetListOrdersWithStatus
 )
+
+// duyệt đơn giao nhận bởi quản lý
+router.patch(
+    '/exchange-order-approved-by-manager/:id',
+    validate(orderValidation.updateStatusForPendingApprovalOrder),
+    orderController.handleApprovedExchangeOrderByManager
+)
+
+// Lấy danh sách đơn hàng giao nhận chờ lấy hàng
+router.get(
+    '/exchange-orders-with-awaiting-pickup',
+    validate(baseValidation.queryOptions),
+    orderController.handleGetListExchangeOrdersWithAwaitingPickup
+)
+
+// cập nhật trạng thái giao hàng theo từng bước (tick vòng tròn / nút Thành công - Thất bại)
+router.patch(
+    '/delivery-orders/:id/status',
+    validate(orderValidation.updateDeliveryStatusByStep),
+    orderController.handleUpdateDeliveryStatusByStep
+)
+
 module.exports = router

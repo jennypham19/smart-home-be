@@ -91,7 +91,7 @@ const createOrderShipping = {
 }
 
 // tiếp nhận đơn hàng
-const receivedOrderByProEmployee = {
+const receivedOrderByEmployee = {
     params: Joi.object().keys({
         orderId: Joi.string().required()
     }),
@@ -111,13 +111,27 @@ const queryOrder = {
     })
 }
 
+// cập nhật trạng thái giao hàng theo từng bước (tick vòng tròn)
+const updateDeliveryStatusByStep = {
+    params: Joi.object().keys({
+        id: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        // Chỉ cần ở bước cuối (theo nút Thành công/Thất bại)
+        result: Joi.string().valid('success', 'failed').optional().messages({
+            'any.only': "result chỉ nhận 'success' hoặc 'failed'"
+        })
+    })
+}
+
 module.exports = {
     createOrder,
     updateProductChecked,
     updateStatusForCompletedOrder,
     updateOrder,
     createOrderShipping,
-    receivedOrderByProEmployee,
+    receivedOrderByEmployee,
     updateStatusForPendingApprovalOrder,
-    queryOrder
+    queryOrder,
+    updateDeliveryStatusByStep
 }
