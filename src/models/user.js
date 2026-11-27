@@ -8,6 +8,14 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'created_by',
                 as: 'UserCreatedOrder'
             })
+            User.hasMany(models.Order, {
+                foreignKey: 'assigned_to',
+                as: 'UserAssignedToOrder'
+            })
+            User.hasMany(models.Order, {
+                foreignKey: 'approved_by',
+                as: 'UserApprovedOrder'
+            })
             User.hasMany(models.DeliveryOrder, {
                 foreignKey: 'created_by',
                 as: 'UserCreatedDeliveryOrder'
@@ -15,6 +23,10 @@ module.exports = (sequelize, DataTypes) => {
             User.hasMany(models.DeliveryOrder, {
                 foreignKey: 'approved_by',
                 as: 'UserApprovedDeliveryOrder'
+            })
+            User.hasMany(models.DeliveryOrder, {
+                foreignKey: 'assigned_to',
+                as: 'UserAssignedDeliveryOrder'
             })
         }
     }

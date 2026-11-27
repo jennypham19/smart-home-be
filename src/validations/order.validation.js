@@ -49,7 +49,17 @@ const updateStatusForCompletedOrder = {
         id: Joi.string().required()
     }),
     body: Joi.object().keys({
-        status: Joi.string().required()
+        status: Joi.string().required(),
+    })
+}
+
+const updateStatusForPendingApprovalOrder = {
+    params: Joi.object().keys({
+        id: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        status: Joi.string().required(),
+        approvedBy: Joi.string().required()
     })
 }
 
@@ -80,10 +90,48 @@ const createOrderShipping = {
     })
 }
 
+// tiếp nhận đơn hàng
+const receivedOrderByEmployee = {
+    params: Joi.object().keys({
+        orderId: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        userId: Joi.string().required(),
+        status: Joi.string().required()
+    })
+}
+
+// Lấy danh sách đơn hàng giao nhận có search + status
+const queryOrder = {
+    query: Joi.object().keys({
+        page: Joi.number().integer().min(1).default(1),
+        limit: Joi.number().integer().min(1).max(100).default(10),
+        searchTerm: Joi.string().optional(),
+        status: Joi.string().optional()
+    })
+}
+
+// cập nhật trạng thái giao hàng theo từng bước (tick vòng tròn)
+const updateDeliveryStatusByStep = {
+    params: Joi.object().keys({
+        id: Joi.string().required()
+    }),
+    body: Joi.object().keys({
+        // Chỉ cần ở bước cuối (theo nút Thành công/Thất bại)
+        result: Joi.string().valid('success', 'failed').optional().messages({
+            'any.only': "result chỉ nhận 'success' hoặc 'failed'"
+        })
+    })
+}
+
 module.exports = {
     createOrder,
     updateProductChecked,
     updateStatusForCompletedOrder,
     updateOrder,
-    createOrderShipping
+    createOrderShipping,
+    receivedOrderByEmployee,
+    updateStatusForPendingApprovalOrder,
+    queryOrder,
+    updateDeliveryStatusByStep
 }

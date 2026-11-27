@@ -8,6 +8,14 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: 'created_by',
                 as: 'OrderCreatedByUser'
             });
+            Order.belongsTo(models.User, {
+                foreignKey: 'assigned_to',
+                as: 'OrderAssignedToUser'
+            });
+            Order.belongsTo(models.User, {
+                foreignKey: 'approved_by',
+                as: 'OrderApprovedByUser'
+            });
             Order.hasMany(models.ProductOrder, {
                 foreignKey: 'order_id',
                 as: 'OrderProducts'
@@ -61,6 +69,14 @@ module.exports = (sequelize, DataTypes) => {
         created_by: {
             type: DataTypes.UUID,
             allowNull: false
+        },
+        assigned_to: {
+            type: DataTypes.UUID,
+            allowNull: true
+        },
+        approved_by: {
+            type: DataTypes.UUID,
+            allowNull: true
         },
         is_order_shipping_created: {
             type: DataTypes.BOOLEAN,

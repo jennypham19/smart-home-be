@@ -1,7 +1,7 @@
 const { StatusCodes } = require('http-status-codes');
 const bcrypt  = require('bcryptjs');
 const crypto = require('crypto');
-const { User } = require('../models');
+const { User, Order, DeliveryOrder } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { Op } = require('sequelize');
 
@@ -84,11 +84,52 @@ const updateAccount = async(id, userBody) => {
 }
 
 // Xóa tài khoản, cập nhật lại is_deleted
+/*
+    - TH cho xóa đơn hàng: khi tạo bị sai và tài khoản chưa dính dáng gì đến đơn hàng
+    - TH đã dính dáng đến đơn hàng => chuyển sang vô hiệu hóa + lý do + bàn giao công việc
+*/
 const deleteAccount = async(id) => {
     try {
         const accountDB = await User.findByPk(id);
+        // 1. TH1: Xóa nhân viên tạo đơn (sale)
+        const prodOrderCreatedByUserDB = await Order.findAll({
+            where: { created_by: accountDB.id }
+        })
+        const exchangeOrderCreatedByUserDB = await DeliveryOrder.findAll({
+            where: { created_by: accountDB.id }
+        })
+        if((prodOrderCreatedByUserDB.length > 0 && exchangeOrderCreatedByUserDB.length > 0) || prodOrderCreatedByUserDB.length > 0 || exchangeOrderCreatedByUserDB.length > 0){
+            throw new ApiError(StatusCodes.BAD_REQUEST, `Không thể xóa nhân viên ${accountDB.full_name} bởi nhân viên này liên quan đến đơn hàng.`)
+        }
+
+        // 2. TH2: Xóa quản lý
+        const prodOrderApprovedByUserDB = await Order.findAll({
+            where: { approved_by: accountDB.id }
+        })
+        const exchangeOrderApprovedByUserDB = await DeliveryOrder.findAll({
+            where: { approved_by: accountDB.id }
+        })
+        if((prodOrderApprovedByUserDB.length > 0 && exchangeOrderApprovedByUserDB.length > 0) || prodOrderApprovedByUserDB.length > 0 || exchangeOrderApprovedByUserDB.length > 0){
+            throw new ApiError(StatusCodes.BAD_REQUEST, `Không thể xóa nhân viên ${accountDB.full_name} bởi nhân viên này liên quan đến đơn hàng.`)
+        }
+
+        // 3. TH3: Xóa nhân viên sản xuất
+        const proOrderAssignedToUserDB = await Order.findAll({
+            where: { assigned_to: accountDB.id }
+        })
+        if(proOrderAssignedToUserDB.length > 0){
+            throw new ApiError(StatusCodes.BAD_REQUEST, `Không thể xóa nhân viên ${accountDB.full_name} bởi nhân viên này liên quan đến đơn hàng.`)
+        }
+        // 4. TH4: Xóa nhân viên đóng gói
+        const exchangeOrderAssignedToUserDB = await DeliveryOrder.findAll({
+            where: { assigned_to: accountDB.id }
+        })
+        if(exchangeOrderAssignedToUserDB.length > 0){
+            throw new ApiError(StatusCodes.BAD_REQUEST, `Không thể xóa nhân viên ${accountDB.full_name} bởi nhân viên này liên quan đến đơn hàng.`)
+        }
+
         accountDB.is_deleted = -1;
-        accountDB.save();
+        await accountDB.save();
     } catch (error) {
         if(error instanceof ApiError) throw error;
         throw new ApiError(StatusCodes.INTERNAL_SERVER_ERROR, "Đã có lỗi xảy ra: " + error.message)

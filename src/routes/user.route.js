@@ -38,5 +38,11 @@ router.patch(
     userController.resetPasswordAccount
 )
 
+// Xóa tài khoản
+router.patch(
+    '/user-account-deleted/:id',
+    validate(baseValidation.queryOption),
+    userController.handleDeleteAccount
+)
 
 module.exports = router
